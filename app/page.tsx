@@ -1,4 +1,4 @@
-import Button from "../components/Button";
+import Button from "@/components/Button";
 
 export default function Home() {
   return (
@@ -16,7 +16,7 @@ export default function Home() {
       <h1 className="text-2xl md:text-4xl">
         Gather your friends.
         <span> </span>
-        <br className="md:hidden"/>
+        <br className="md:hidden" />
         Choose your own winner.
       </h1>
       <div className="flex flex-col md:flex-row gap-2">
