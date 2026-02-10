@@ -13,10 +13,13 @@ export default function Home() {
           fill="var(--foreground)"
         ></path>
       </svg>
-      <h1 className="text-4xl">
-        Gather your friends. Choose your own winner.
+      <h1 className="text-2xl md:text-4xl">
+        Gather your friends.
+        <span> </span>
+        <br className="md:hidden"/>
+        Choose your own winner.
       </h1>
-      <div className="flex gap-2">
+      <div className="flex flex-col md:flex-row gap-2">
         <Button href="/new-room">Create a room</Button>
         <Button href="/join-room" variant="secondary">
           Join a room
