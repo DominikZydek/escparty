@@ -3,7 +3,75 @@ generator client {
 }
 
 datasource db {
-  provider = "postgresql" 
+  provider = "postgresql"
 }
 
-// models go here
+// dynamic models
+
+model GameRoom {
+  id String @id @default(uuid())
+  code String @unique
+  status GameStatus @default(LOBBY)
+  currentVoterId String?
+  contestId String
+  contest Contest @relation(fields: [contestId], references: [id])
+  players Player[]
+  createdAt DateTime @default(now())
+}
+
+model Player {
+  id String @id @default(uuid())
+  name String
+  isReady Boolean @default(false)
+  roomCode String
+  room GameRoom @relation(fields: [roomCode], references: [code], onDelete: Cascade)
+  avatarId String
+  avatar Avatar? @relation(fields: [avatarId], references: [id])
+  votes Vote[]
+}
+
+model Vote {
+  id String @id @default(uuid())
+  points Int
+  playerId String
+  player Player @relation(fields: [playerId], references: [id], onDelete: Cascade)
+  entryId String
+  entry Entry @relation(fields: [entryId], references: [id])
+
+  @@unique([playerId, entryId]) // one player can vote for one country only once
+}
+
+// static models
+
+model Contest {
+  id String @id @default(uuid())
+  name String
+  year Int
+  isOfficial Boolean @default(true)
+  entries Entry[]
+  rooms GameRoom[]
+}
+
+model Entry {
+  id String @id @default(uuid())
+  country String
+  artist String
+  songTitle String
+  order Int @default(0)
+  contestId String
+  contest Contest @relation(fields: [contestId], references: [id])
+  votes Vote[]
+}
+
+model Avatar {
+  id String @id @default(uuid())
+  name String
+  url String
+  players Player[]
+}
+
+enum GameStatus {
+  LOBBY
+  VOTING
+  RESULTS
+}
