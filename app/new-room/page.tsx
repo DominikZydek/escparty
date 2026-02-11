@@ -29,11 +29,7 @@ export default function Home() {
 
   return (
     <div className="min-h-screen w-full flex flex-col p-5 relative z-0">
-      <div className="flex items-center gap-2">
-        <BackArrow />
-        <p className="text-2xl text-white font-bold">Go back</p>
-      </div>
-
+      <BackArrow />
       <div className="flex-1 flex justify-center items-center gap-16">
         
         <div className="flex flex-col gap-4 w-96 text-center">
