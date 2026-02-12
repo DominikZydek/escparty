@@ -1,29 +1,24 @@
 "use client";
 
-import { useRouter } from "next/navigation";
 import BackArrow from "@/components/BackArrow";
 import Button from "@/components/Button";
 import Dropdown from "@/components/Dropdown";
 import { Contest } from "@prisma/client";
+import { createRoom } from "@/app/actions/room";
 
 export default function GameSetup({ escEditions }: { escEditions: Contest[] }) {
-  const router = useRouter();
 
-  const generateRoomCode = () => {
-    const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
-    let result = "";
-    for (let i = 0; i < 4; i++) {
-      result += chars.charAt(Math.floor(Math.random() * chars.length));
+  const handleStartGame = async (selectedName: string | null) => {
+    if (!selectedName) return;
+
+    const selectedContest = escEditions.find(e => e.name === selectedName);
+
+    if (!selectedContest) {
+        console.error("Contest not found")
+        return;
     }
-    return result;
-  };
 
-  const handleStartGame = (edition: string | null) => {
-    const roomCode = generateRoomCode();
-
-    // create a new room
-
-    router.push(`/room/${roomCode}`);
+    await createRoom(selectedContest.id);
   };
 
   return (
