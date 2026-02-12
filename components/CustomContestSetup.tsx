@@ -5,13 +5,18 @@ import { useState } from "react";
 import EntryRow from "./EntryRow";
 import { v4 as uuidv4 } from "uuid";
 import Button from "./Button";
+import { createCustomContest } from "@/app/actions/contest";
+import { createRoom } from "@/app/actions/room";
+import { useRouter } from "next/navigation";
 
 interface CustomContestSetupProps {
   onBack: () => void;
 }
 
 export default function CustomContestSetup({ onBack }: CustomContestSetupProps) {
+    const router = useRouter();
 
+    const [contestName, setContestName] = useState("Custom contest");
     const [entries, setEntries] = useState([
         { id: uuidv4(), country: "", artist: "", songTitle: "" }
     ]);
@@ -35,9 +40,18 @@ export default function CustomContestSetup({ onBack }: CustomContestSetupProps) 
     }
 
     const handleCreateGame = async () => {
-        // TODO: validation and server action
-      console.log("Saving entries:", entries);
-    };
+    if (!contestName.trim()) return alert("Enter contest name");
+    
+    try {
+        const contest = await createCustomContest(contestName, entries);
+        const room = await createRoom(contest.id); 
+        router.push(`/room/${room.code}`);
+        
+    } catch (error) {
+        console.error("Failed to create contest", error);
+        alert("Something went wrong");
+    }
+  };
 
   return (
     <div className="h-full w-full max-w-4xl flex flex-col gap-6 mx-auto">

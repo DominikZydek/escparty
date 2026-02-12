@@ -1,7 +1,6 @@
 "use server";
 
 import prisma from "@/lib/prisma";
-import { redirect } from "next/navigation";
 
 const generateRoomCode = () => {
     const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
@@ -15,7 +14,7 @@ const generateRoomCode = () => {
 export async function createRoom(contestId: string) {
     const roomCode = generateRoomCode();
 
-    await prisma.gameRoom.create({
+    const room = await prisma.gameRoom.create({
         data: {
             code: roomCode,
             status: "LOBBY",
@@ -25,5 +24,5 @@ export async function createRoom(contestId: string) {
         }
     });
 
-    redirect(`/room/${roomCode}`);
+    return room;
 }
