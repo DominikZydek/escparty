@@ -6,17 +6,27 @@ import { useRouter } from "next/navigation";
 interface BackArrowProps {
   className?: string;
   label?: string;
+  onClick?: () => void;
 }
 
 export default function BackArrow({
   className = "",
   label = "Go back",
+  onClick,
 }: BackArrowProps) {
   const router = useRouter();
 
+  const handleNavigation = () => {
+    if (onClick) {
+      onClick();
+    } else {
+      router.back();
+    }
+  };
+
   return (
     <button
-      onClick={() => router.back()}
+      onClick={handleNavigation}
       type="button"
       className={`
         group flex items-center gap-3 

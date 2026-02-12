@@ -5,11 +5,21 @@ import Button from "@/components/Button";
 import Dropdown from "@/components/Dropdown";
 import { Contest } from "@prisma/client";
 import { createRoom } from "@/app/actions/room";
+import CustomContestSetup from "./CustomContestSetup";
+import { useState, useTransition } from "react";
 
 export default function GameSetup({ escEditions }: { escEditions: Contest[] }) {
 
+    const [isBuildingCustom, setIsBuildingCustom] = useState(false);
+    const [isPending, startTransition] = useTransition();
+
   const handleStartGame = async (selectedName: string | null) => {
     if (!selectedName) return;
+
+    if (selectedName === 'Custom') {
+        setIsBuildingCustom(true);
+        return;
+    }
 
     const selectedContest = escEditions.find(e => e.name === selectedName);
 
@@ -18,8 +28,16 @@ export default function GameSetup({ escEditions }: { escEditions: Contest[] }) {
         return;
     }
 
-    await createRoom(selectedContest.id);
+    startTransition(async () => {
+        await createRoom(selectedContest.id);
+    });
   };
+
+  if (isBuildingCustom) {
+    return(
+        <CustomContestSetup onBack={() => setIsBuildingCustom(false)}/>
+    );
+  }
 
   return (
     <div className="min-h-screen w-full flex flex-col p-5 relative z-0">
