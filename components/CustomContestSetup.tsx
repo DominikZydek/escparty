@@ -45,7 +45,7 @@ export default function CustomContestSetup({ onBack }: CustomContestSetupProps) 
     try {
         const contest = await createCustomContest(contestName, entries);
         const room = await createRoom(contest.id); 
-        router.push(`/room/${room.code}`);
+        router.push(`/room/${room.code}?mode=host`);
         
     } catch (error) {
         console.error("Failed to create contest", error);

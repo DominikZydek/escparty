@@ -32,7 +32,7 @@ export default function GameSetup({ escEditions }: { escEditions: Contest[] }) {
 
     startTransition(async () => {
       const room = await createRoom(selectedContest.id);
-      router.push(`/room/${room.code}`);
+      router.push(`/room/${room.code}?mode=host`);
     });
   };
 

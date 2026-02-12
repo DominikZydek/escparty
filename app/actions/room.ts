@@ -1,6 +1,7 @@
 "use server";
 
 import prisma from "@/lib/prisma";
+import { GameStatus } from "@prisma/client";
 
 const generateRoomCode = () => {
     const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
@@ -25,4 +26,25 @@ export async function createRoom(contestId: string) {
     });
 
     return room;
+}
+
+export async function validateRoom(code: string) {
+  const room = await prisma.gameRoom.findUnique({
+    where: { code },
+    select: { status: true }
+  });
+
+  if (!room) {
+    return { error: "Room not found." };
+  }
+
+  if (room.status === 'RESULTS') {
+    return { error: "Game has finished." };
+  }
+
+  if (room.status === 'VOTING') {
+    return { error: "Game in progress. Too late to join!" };
+  }
+
+  return { success: true };
 }
