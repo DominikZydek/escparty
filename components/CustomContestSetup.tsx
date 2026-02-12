@@ -1,22 +1,77 @@
 "use client";
 
 import BackArrow from "@/components/BackArrow";
+import { useState } from "react";
+import EntryRow from "./EntryRow";
+import { v4 as uuidv4 } from "uuid";
+import Button from "./Button";
 
 interface CustomContestSetupProps {
   onBack: () => void;
 }
 
 export default function CustomContestSetup({ onBack }: CustomContestSetupProps) {
+
+    const [entries, setEntries] = useState([
+        { id: uuidv4(), country: "", artist: "", songTitle: "" }
+    ]);
+
+    const handleUpdate = (id: string, field: string, value: string) => {
+        setEntries(prev => prev.map(item => 
+            item.id === id ? { ...item, [field]: value } : item
+        ));
+    }
+
+    const handleAddRow = () => {
+        setEntries(prev => [
+            ...prev,
+            { id: uuidv4(), country: "", artist: "", songTitle: "" }
+        ]);
+    }
+
+    const handleDelete = (id: string) => {
+        if (entries.length === 1) return;
+        setEntries(prev => prev.filter(item => item.id !== id));
+    }
+
+    const handleCreateGame = async () => {
+        // TODO: validation and server action
+      console.log("Saving entries:", entries);
+    };
+
   return (
-    <div className="min-h-screen w-full flex flex-col p-5 relative z-0 text-white">
-      <BackArrow onClick={onBack}/>
-      <div className="flex-1 flex flex-col justify-center items-center gap-8">
-        <h1 className="text-3xl font-bold drop-shadow-lg">
-          Custom Contest Setup
-        </h1>
-        <p className="text-white/50 italic">
-          Tu będzie formularz budowania własnego konkursu.
-        </p>
+    <div className="h-full w-full max-w-4xl flex flex-col gap-6 mx-auto">
+      
+      <div className="shrink-0 flex justify-between items-center text-white mb-4">
+        <h2 className="text-2xl font-bold drop-shadow-md">Add Participants</h2>
+        <span className="text-white/50 text-sm font-mono">{entries.length} entries</span>
+      </div>
+
+      <div className="flex-1 flex flex-col gap-2 overflow-y-auto pr-2 custom-scrollbar min-h-0">
+        {entries.map((entry, index) => (
+          <EntryRow 
+            key={entry.id}
+            index={index}
+            entry={entry}
+            mode="edit"
+            onUpdate={(field, val) => handleUpdate(entry.id, field, val)}
+            onDelete={() => handleDelete(entry.id)}
+          />
+        ))}
+      </div>
+
+      <div className="shrink-0 flex flex-col gap-4 mt-auto items-center pt-4 border-t border-white/10 pb-1">
+        <button 
+          onClick={handleAddRow}
+          className="text-white/70 hover:text-white border-dashed border-2 border-white/20 hover:border-white/50 hover:bg-white/5 rounded-lg p-3 w-full transition-all duration-200"
+        >
+          + Add another entry
+        </button>
+
+        <div className="flex gap-4 w-full justify-center mt-2">
+            <Button variant="secondary" onClick={onBack}>Cancel</Button>
+            <Button onClick={handleCreateGame}>Create & Start Game</Button>
+        </div>
       </div>
     </div>
   );
