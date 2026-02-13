@@ -2,6 +2,7 @@
 
 import prisma from "@/lib/prisma";
 import { GameStatus } from "@prisma/client";
+import { pusherServer } from "@/lib/pusher";
 
 const generateRoomCode = () => {
     const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
@@ -47,4 +48,17 @@ export async function validateRoom(code: string) {
   }
 
   return { success: true };
+}
+
+export async function startGame(roomCode: string) {
+  await prisma.gameRoom.update({
+    where: { code: roomCode },
+    data: { status: 'VOTING' }
+  });
+
+  await pusherServer.trigger(
+    `room-${roomCode}`,
+    'game-started',
+    { redirectUrl: `/room/${roomCode}/voting` }
+  );
 }
