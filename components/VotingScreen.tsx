@@ -117,7 +117,7 @@ export default function VotingScreen({ roomCode, playerId, entries }: VotingScre
         ))}
       </div>
 
-      <div className="fixed bottom-0 left-0 w-full bg-gradient-to-t from-black via-black/90 to-transparent p-6 pt-12 flex justify-center">
+      <div className="fixed bottom-0 left-0 w-full bg-linear-to-t from-black via-black/90 to-transparent p-6 pt-12 flex justify-center">
         <div className="w-full max-w-md">
           <Button 
             onClick={handleSubmit} 

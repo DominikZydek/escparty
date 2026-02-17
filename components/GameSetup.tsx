@@ -53,7 +53,6 @@ export default function GameSetup({ escEditions }: { escEditions: Contest[] }) {
               <Dropdown
                 options={escEditions.map((e) => e.name)}
                 placeholder="Select year"
-                disabled={isPending}
                 onSelect={(selectedEdition) => handleStartGame(selectedEdition)}
               />
             </div>

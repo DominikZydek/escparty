@@ -149,7 +149,7 @@ export default function ResultsScreen({
 
     return (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm animate-in fade-in">
-            <div className="bg-gradient-to-br from-pink-600 to-purple-700 p-1 rounded-2xl shadow-2xl">
+            <div className="bg-linear-to-br from-pink-600 to-purple-700 p-1 rounded-2xl shadow-2xl">
                 <button 
                     onClick={() => revealTwelve(roomCode)}
                     className="bg-black text-white text-3xl font-black uppercase py-12 px-16 rounded-xl hover:bg-white/10 transition-all active:scale-95 border-2 border-white/20"
@@ -198,7 +198,7 @@ export default function ResultsScreen({
                     transition={{ type: "spring", stiffness: 300, damping: 30 }}
                     className={clsx(
                         "flex items-center p-3 rounded-xl border transition-colors relative overflow-hidden",
-                        index === 0 ? "bg-gradient-to-r from-yellow-600/40 to-yellow-900/40 border-yellow-500/50" : "bg-white/5 border-white/10"
+                        index === 0 ? "bg-linear-to-r from-yellow-600/40 to-yellow-900/40 border-yellow-500/50" : "bg-white/5 border-white/10"
                     )}
                 >
                     <div className="w-12 text-2xl font-black text-white/30 text-right mr-4">
