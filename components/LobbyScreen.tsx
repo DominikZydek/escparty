@@ -67,7 +67,7 @@ export default function LobbyScreen({
         <div>
           <h1 className="text-4xl font-bold drop-shadow-lg">Lobby</h1>
           <p className="text-white/50 text-xl">
-            Join at <span className="text-white font-mono">esc.party</span>{" "}
+            Join at <span className="text-white font-mono">escparty.vercel.app</span>{" "}
             using code:
           </p>
         </div>

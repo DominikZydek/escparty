@@ -8,7 +8,6 @@ import { Player, Vote, Entry } from "@prisma/client";
 import Button from "@/components/Button";
 import { setNextVoter, revealTwelve } from "@/app/actions/room";
 
-// Rozszerzone typy danych
 type VoteWithEntry = Vote & { entry: Entry };
 type PlayerWithVotes = Player & { votes: VoteWithEntry[], avatar: { url: string } | null };
 
@@ -218,7 +217,7 @@ export default function ResultsScreen({
                     transition={{ type: "spring", stiffness: 300, damping: 30 }}
                     className={clsx(
                         "flex items-center p-3 rounded-xl border transition-colors relative overflow-hidden",
-                        index === 0 ? "bg-gradient-to-r from-yellow-600/40 to-yellow-900/40 border-yellow-500/50" : "bg-white/5 border-white/10"
+                        index === 0 ? "bg-linear-to-r from-yellow-600/40 to-yellow-900/40 border-yellow-500/50" : "bg-white/5 border-white/10"
                     )}
                 >
                     <div className="w-12 text-2xl font-black text-white/30 text-right mr-4 font-mono">
@@ -233,7 +232,7 @@ export default function ResultsScreen({
                     </div>
 
                     <motion.div 
-                        className="absolute left-0 top-0 bottom-0 bg-white/5 -z-0"
+                        className="absolute left-0 top-0 bottom-0 bg-white/5 z-0"
                         initial={{ width: 0 }}
                         animate={{ 
                             width: calculatedEntries[0].points > 0 
