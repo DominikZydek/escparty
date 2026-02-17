@@ -1,10 +1,8 @@
 "use server";
 
 import prisma from "@/lib/prisma";
-import { GameStatus } from "@prisma/client";
 import { pusherServer } from "@/lib/pusher";
 import { cookies } from "next/headers";
-import { revalidatePath } from 'next/cache';
 
 const generateRoomCode = () => {
   const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
