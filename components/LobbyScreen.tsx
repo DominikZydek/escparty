@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import Pusher from "pusher-js";
 import Button from "@/components/Button";
 import { Player, Avatar } from "@prisma/client";
-import { startGame } from "@/app/actions/room";
+import { startShow } from "@/app/actions/room";
 import { useRouter } from "next/navigation";
 
 type PlayerWithAvatar = Player & { avatar: Avatar | null };
@@ -19,7 +19,7 @@ export default function LobbyScreen({
   initialPlayers,
 }: LobbyScreenProps) {
   const [players, setPlayers] = useState<PlayerWithAvatar[]>(initialPlayers);
-  const [isStarting, setIsStarting] = useState(false); 
+  const [isStarting, setIsStarting] = useState(false);
 
   const router = useRouter();
 
@@ -39,8 +39,8 @@ export default function LobbyScreen({
       });
     });
 
-    channel.bind("game-started", (data: { redirectUrl: string }) => {
-      router.push(data.redirectUrl);
+    channel.bind("show-started", (data: { redirectUrl: string }) => {
+      router.refresh();
     });
 
     return () => {
@@ -49,12 +49,12 @@ export default function LobbyScreen({
   }, [roomCode, router]);
 
   const handleStartGame = async () => {
-    if (isStarting) return; 
-    
+    if (isStarting) return;
+
     setIsStarting(true);
 
     try {
-      await startGame(roomCode);
+      await startShow(roomCode);
     } catch (error) {
       console.error("Failed to start", error);
       setIsStarting(false);
@@ -67,7 +67,8 @@ export default function LobbyScreen({
         <div>
           <h1 className="text-4xl font-bold drop-shadow-lg">Lobby</h1>
           <p className="text-white/50 text-xl">
-            Join at <span className="text-white font-mono">escparty.vercel.app</span>{" "}
+            Join at{" "}
+            <span className="text-white font-mono">escparty.vercel.app</span>{" "}
             using code:
           </p>
         </div>
@@ -105,11 +106,11 @@ export default function LobbyScreen({
           </div>
         )}
       </div>
-      
+
       <div className="mt-8 border-t border-white/10 pt-8 flex justify-center">
         <div className="w-full max-w-md">
-          <Button 
-            disabled={players.length < 1 || isStarting} 
+          <Button
+            disabled={players.length < 1 || isStarting}
             onClick={handleStartGame}
           >
             {isStarting ? "Starting..." : "Start Game"}

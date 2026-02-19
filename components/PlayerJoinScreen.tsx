@@ -12,7 +12,10 @@ interface PlayerJoinScreenProps {
   avatars: Avatar[];
 }
 
-export default function PlayerJoinScreen({ roomCode, avatars }: PlayerJoinScreenProps) {
+export default function PlayerJoinScreen({
+  roomCode,
+  avatars,
+}: PlayerJoinScreenProps) {
   const [name, setName] = useState("");
   const [selectedAvatarId, setSelectedAvatarId] = useState<string | null>(null);
   const [hasJoined, setHasJoined] = useState(false);
@@ -29,9 +32,8 @@ export default function PlayerJoinScreen({ roomCode, avatars }: PlayerJoinScreen
 
     const channel = pusher.subscribe(`room-${roomCode}`);
 
-    channel.bind("game-started", (data: { redirectUrl: string }) => {
-      console.log("Game started! Redirecting...");
-      router.push(data.redirectUrl);
+    channel.bind("show-started", (data: { redirectUrl: string }) => {
+      window.location.href = data.redirectUrl;
     });
 
     return () => {
@@ -41,7 +43,7 @@ export default function PlayerJoinScreen({ roomCode, avatars }: PlayerJoinScreen
 
   const handleJoin = async () => {
     if (!name || !selectedAvatarId) return;
-    
+
     setIsSubmitting(true);
     try {
       await joinGame(roomCode, name, selectedAvatarId);
@@ -57,9 +59,9 @@ export default function PlayerJoinScreen({ roomCode, avatars }: PlayerJoinScreen
     return (
       <div className="flex flex-col items-center justify-center h-screen text-white gap-6 p-5">
         <div className="animate-pulse">
-          <img 
-            src={avatars.find(a => a.id === selectedAvatarId)?.url} 
-            alt="My Avatar" 
+          <img
+            src={avatars.find((a) => a.id === selectedAvatarId)?.url}
+            alt="My Avatar"
             className="w-32 h-32 rounded-full border-4 border-white shadow-[0_0_30px_rgba(255,255,255,0.3)]"
           />
         </div>
@@ -74,7 +76,9 @@ export default function PlayerJoinScreen({ roomCode, avatars }: PlayerJoinScreen
   // join form
   return (
     <div className="min-h-screen flex flex-col p-5 text-white max-w-md mx-auto">
-      <h1 className="text-3xl font-bold text-center mb-2">Join Room {roomCode}</h1>
+      <h1 className="text-3xl font-bold text-center mb-2">
+        Join Room {roomCode}
+      </h1>
       <p className="text-center text-white/50 mb-8">Choose your persona</p>
 
       <div className="grid grid-cols-3 gap-4 mb-8">
@@ -84,13 +88,18 @@ export default function PlayerJoinScreen({ roomCode, avatars }: PlayerJoinScreen
             onClick={() => setSelectedAvatarId(avatar.id)}
             className={`
               relative rounded-full overflow-hidden aspect-square transition-all duration-200
-              ${selectedAvatarId === avatar.id 
-                ? "ring-4 ring-white scale-110 shadow-lg z-10" 
-                : "opacity-70 hover:opacity-100 hover:scale-105"
+              ${
+                selectedAvatarId === avatar.id
+                  ? "ring-4 ring-white scale-110 shadow-lg z-10"
+                  : "opacity-70 hover:opacity-100 hover:scale-105"
               }
             `}
           >
-            <img src={avatar.url} alt={avatar.name} className="w-full h-full object-cover" />
+            <img
+              src={avatar.url}
+              alt={avatar.name}
+              className="w-full h-full object-cover"
+            />
           </button>
         ))}
       </div>
@@ -99,7 +108,7 @@ export default function PlayerJoinScreen({ roomCode, avatars }: PlayerJoinScreen
         <label className="block text-sm font-bold uppercase tracking-wider text-white/40 mb-2">
           Your Nickname
         </label>
-        <input 
+        <input
           value={name}
           onChange={(e) => setName(e.target.value)}
           placeholder="Enter name..."
@@ -107,9 +116,8 @@ export default function PlayerJoinScreen({ roomCode, avatars }: PlayerJoinScreen
         />
       </div>
 
-      {/* 3. Przycisk */}
-      <Button 
-        onClick={handleJoin} 
+      <Button
+        onClick={handleJoin}
         disabled={!name || !selectedAvatarId || isSubmitting}
       >
         {isSubmitting ? "Joining..." : "Join Game"}

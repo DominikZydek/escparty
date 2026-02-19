@@ -16,6 +16,8 @@ model GameRoom {
   contestId String
   contest Contest @relation(fields: [contestId], references: [id])
   players Player[]
+  currentEntryId String?
+  currentEntry Entry? @relation(fields: [currentEntryId], references: [id])
   createdAt DateTime @default(now())
 }
 
@@ -57,10 +59,12 @@ model Entry {
   country String
   artist String
   songTitle String
+  videoUrl String?
   order Int @default(0)
   contestId String
   contest Contest @relation(fields: [contestId], references: [id])
   votes Vote[]
+  activeRooms GameRoom[]
 }
 
 model Avatar {
@@ -72,6 +76,7 @@ model Avatar {
 
 enum GameStatus {
   LOBBY
+  WATCHING
   VOTING
   RESULTS
 }

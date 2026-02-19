@@ -8,6 +8,8 @@ import HostVotingDashboard from "@/components/HostVotingDashboard";
 import VotingScreen from "@/components/VotingScreen";
 import ResultsScreen from "@/components/ResultsScreen";
 import { getAvatars } from "@/app/actions/player";
+import PlayerWatchingScreen from "@/components/PlayerWatchingScreen";
+import HostWatchingScreen from "@/components/HostWatchingScreen";
 
 interface PageProps {
   params: Promise<{ roomCode: string }>;
@@ -41,6 +43,34 @@ export default async function RoomPage({ params }: PageProps) {
 
       const avatars = await getAvatars();
       return <PlayerJoinScreen roomCode={roomCode} avatars={avatars} />;
+
+    case 'WATCHING':
+      const contestEntries = await prisma.entry.findMany({
+        where: { contestId: room.contestId },
+        orderBy: { order: 'asc' }
+      });
+
+      if (isHost) {
+        return (
+          <HostWatchingScreen 
+            roomCode={roomCode} 
+            entries={contestEntries} 
+            initialEntryId={room.currentEntryId}
+          />
+        );
+      }
+
+      if (playerId) {
+        return (
+          <PlayerWatchingScreen 
+            roomCode={roomCode} 
+            entries={contestEntries} 
+            initialEntryId={room.currentEntryId}
+          />
+        );
+      }
+      
+      return redirect(`/join-room?code=${roomCode}`);
 
     case "VOTING":
       if (isHost) {

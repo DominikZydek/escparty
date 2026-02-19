@@ -83,7 +83,8 @@ async function main() {
             country: entry.country,
             artist: entry.artist,
             songTitle: entry.songTitle,
-            order: index + 1
+            order: index + 1,
+            videoUrl: "https://www.youtube.com/embed/mzCmNU3q8ZU"
           }))
         }
       }

@@ -81,27 +81,62 @@ export async function startGame(roomCode: string) {
 export async function endVoting(roomCode: string) {
   await prisma.gameRoom.update({
     where: { code: roomCode },
-    data: { status: 'RESULTS' }
+    data: { status: "RESULTS" },
   });
 
-  await pusherServer.trigger(
-    `room-${roomCode}`,
-    'show-results',
-    { redirectUrl: `/room/${roomCode}` }
-  );
+  await pusherServer.trigger(`room-${roomCode}`, "show-results", {
+    redirectUrl: `/room/${roomCode}`,
+  });
 }
 
 export async function setNextVoter(roomCode: string, voterId: string | null) {
   await prisma.gameRoom.update({
     where: { code: roomCode },
-    data: { currentVoterId: voterId }
+    data: { currentVoterId: voterId },
   });
 
-  await pusherServer.trigger(`room-${roomCode}`, 'voter-changed', { 
-    currentVoterId: voterId 
+  await pusherServer.trigger(`room-${roomCode}`, "voter-changed", {
+    currentVoterId: voterId,
   });
 }
 
 export async function revealTwelve(roomCode: string) {
-  await pusherServer.trigger(`room-${roomCode}`, 'twelve-revealed', {});
+  await pusherServer.trigger(`room-${roomCode}`, "twelve-revealed", {});
+}
+
+export async function startShow(roomCode: string) {
+  await prisma.gameRoom.update({
+    where: { code: roomCode },
+    data: { status: "WATCHING" },
+  });
+
+  // notify all clients to refresh and load the Watching screen
+  await pusherServer.trigger(`room-${roomCode}`, "show-started", {
+    redirectUrl: `/room/${roomCode}`,
+  });
+}
+
+export async function playEntry(roomCode: string, entryId: string | null) {
+  await prisma.gameRoom.update({
+    where: { code: roomCode },
+    data: { currentEntryId: entryId },
+  });
+
+  // notify clients that the video has changed so they can update their UI
+  await pusherServer.trigger(`room-${roomCode}`, "video-changed", { entryId });
+}
+
+export async function startVoting(roomCode: string) {
+  await prisma.gameRoom.update({
+    where: { code: roomCode },
+    data: {
+      status: "VOTING",
+      currentEntryId: null, // clear the video screen
+    },
+  });
+
+  // notify clients to move to the voting form
+  await pusherServer.trigger(`room-${roomCode}`, "voting-started", {
+    redirectUrl: `/room/${roomCode}`,
+  });
 }
