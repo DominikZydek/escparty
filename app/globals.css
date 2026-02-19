@@ -60,3 +60,16 @@ body::after {
   pointer-events: none;
   mix-blend-mode: overlay;
 }
+
+/* IFRAME OPTIM */
+
+body:has(:fullscreen)::before,
+body:has(:fullscreen)::after {
+  display: none !important;
+  animation: none !important;
+}
+
+body:has(:fullscreen) {
+  background-color: #000000 !important;
+  background-image: none !important;
+}
