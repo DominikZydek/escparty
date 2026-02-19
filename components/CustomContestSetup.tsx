@@ -18,7 +18,7 @@ export default function CustomContestSetup({ onBack }: CustomContestSetupProps) 
 
     const [contestName, setContestName] = useState("Custom contest");
     const [entries, setEntries] = useState([
-        { id: uuidv4(), country: "", artist: "", songTitle: "" }
+        { id: uuidv4(), country: "", artist: "", songTitle: "", videoUrl: "" }
     ]);
 
     const handleUpdate = (id: string, field: string, value: string) => {
@@ -30,7 +30,7 @@ export default function CustomContestSetup({ onBack }: CustomContestSetupProps) 
     const handleAddRow = () => {
         setEntries(prev => [
             ...prev,
-            { id: uuidv4(), country: "", artist: "", songTitle: "" }
+            { id: uuidv4(), country: "", artist: "", songTitle: "", videoUrl: "" }
         ]);
     }
 

@@ -16,6 +16,7 @@ type EntryInput = {
   country: string;
   artist: string;
   songTitle: string;
+  videoUrl?: string;
 };
 
 export async function createCustomContest(
@@ -37,6 +38,7 @@ export async function createCustomContest(
           country: entry.country,
           artist: entry.artist,
           songTitle: entry.songTitle,
+          videoUrl: entry.videoUrl || null,
           order: index + 1, // this is to be changed ig
         })),
       },

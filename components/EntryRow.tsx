@@ -3,34 +3,35 @@
 import { GripVertical, Trash2 } from "lucide-react";
 
 interface EntryData {
-    id: string;
-    country: string;
-    artist: string;
-    songTitle: string;
-    points?: number;
+  id: string;
+  country: string;
+  artist: string;
+  songTitle: string;
+  videoUrl?: string;
+  points?: number;
 }
 
 interface EntryRowProps {
-    entry: EntryData;
-    index: number;
-    mode: "edit" | "display";
-    onUpdate?: (field: keyof EntryData, value: string) => void;
-    onDelete?: () => void;
-    dragHandleProps?: any;
+  entry: EntryData;
+  index: number;
+  mode: "edit" | "display";
+  onUpdate?: (field: keyof EntryData, value: string) => void;
+  onDelete?: () => void;
+  dragHandleProps?: any;
 }
 
 export default function EntryRow({
-    entry,
-    index,
-    mode,
-    onUpdate,
-    onDelete,
-    dragHandleProps
-} : EntryRowProps) {
+  entry,
+  index,
+  mode,
+  onUpdate,
+  onDelete,
+  dragHandleProps
+}: EntryRowProps) {
 
-    const isEdit = mode === "edit";
+  const isEdit = mode === "edit";
 
-    return (
+  return (
     <div className="flex items-center gap-4 bg-white/10 p-3 rounded-lg backdrop-blur-sm border border-white/5 mb-2">
       
       {/* left side - index or grip */}
@@ -80,6 +81,15 @@ export default function EntryRow({
           />
         ) : (
            <span className="text-white/60 italic">"{entry.songTitle}"</span>
+        )}
+
+        {isEdit && (
+          <input 
+            placeholder="YouTube Embed URL (np. https://www.youtube.com/embed/...)"
+            className="col-span-3 w-full bg-transparent border-b border-white/10 text-white/70 placeholder:text-white/20 focus:outline-none focus:border-white/50 transition-colors py-1 text-sm"
+            value={entry.videoUrl || ''}
+            onChange={(e) => onUpdate?.('videoUrl', e.target.value)}
+          />
         )}
       </div>
 
