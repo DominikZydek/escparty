@@ -19,6 +19,17 @@ type EntryInput = {
   videoUrl?: string;
 };
 
+const formatYoutubeUrl = (url: string|undefined) => {
+  const videoIdMatch = url?.match(
+    /(?:youtu\.be\/|youtube\.com\/(?:embed\/|v\/|watch\?v=|watch\?.+&v=|shorts\/))([\w-]{11})/,
+  );
+
+  if (videoIdMatch && videoIdMatch[1]) {
+    return `https://www.youtube.com/embed/${videoIdMatch[1]}`;
+  }
+  return url;
+};
+
 export async function createCustomContest(
   contestName: string,
   entries: EntryInput[],
@@ -38,7 +49,7 @@ export async function createCustomContest(
           country: entry.country,
           artist: entry.artist,
           songTitle: entry.songTitle,
-          videoUrl: entry.videoUrl || null,
+          videoUrl: formatYoutubeUrl(entry.videoUrl) || null,
           order: index + 1, // this is to be changed ig
         })),
       },

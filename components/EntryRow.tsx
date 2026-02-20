@@ -85,7 +85,7 @@ export default function EntryRow({
 
         {isEdit && (
           <input 
-            placeholder="YouTube Embed URL (np. https://www.youtube.com/embed/...)"
+            placeholder="YouTube URL"
             className="col-span-3 w-full bg-transparent border-b border-white/10 text-white/70 placeholder:text-white/20 focus:outline-none focus:border-white/50 transition-colors py-1 text-sm"
             value={entry.videoUrl || ''}
             onChange={(e) => onUpdate?.('videoUrl', e.target.value)}
