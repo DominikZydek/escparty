@@ -7,11 +7,13 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
-    "postinstall": "prisma generate"
+    "postinstall": "prisma generate",
+    "fetch-images": "tsx prisma/fetch-images.ts"
   },
   "dependencies": {
     "@prisma/adapter-pg": "^7.3.0",
     "@prisma/client": "^7.3.0",
+    "@remotion/player": "^4.0.427",
     "@supabase/supabase-js": "^2.95.3",
     "@types/uuid": "^10.0.0",
     "clsx": "^2.1.1",
@@ -24,10 +26,14 @@
     "pusher-js": "^8.4.0",
     "react": "19.2.3",
     "react-dom": "19.2.3",
+    "remotion": "^4.0.427",
     "tailwind-merge": "^3.4.1",
     "uuid": "^13.0.0"
   },
   "devDependencies": {
+    "@remotion/bundler": "^4.0.427",
+    "@remotion/cli": "^4.0.427",
+    "@remotion/renderer": "^4.0.427",
     "@tailwindcss/postcss": "^4",
     "@types/node": "^20.19.33",
     "@types/pg": "^8.16.0",

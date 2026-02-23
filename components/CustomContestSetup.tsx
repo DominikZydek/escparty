@@ -20,6 +20,8 @@ export default function CustomContestSetup({ onBack }: CustomContestSetupProps) 
     const [entries, setEntries] = useState([
         { id: uuidv4(), country: "", artist: "", songTitle: "", videoUrl: "" }
     ]);
+    
+    const [isCreating, setIsCreating] = useState(false);
 
     const handleUpdate = (id: string, field: string, value: string) => {
         setEntries(prev => prev.map(item => 
@@ -42,6 +44,8 @@ export default function CustomContestSetup({ onBack }: CustomContestSetupProps) 
     const handleCreateGame = async () => {
     if (!contestName.trim()) return alert("Enter contest name");
     
+    setIsCreating(true);
+    
     try {
         const contest = await createCustomContest(contestName, entries);
         const room = await createRoom(contest.id); 
@@ -50,6 +54,7 @@ export default function CustomContestSetup({ onBack }: CustomContestSetupProps) 
     } catch (error) {
         console.error("Failed to create contest", error);
         alert("Something went wrong");
+        setIsCreating(false);
     }
   };
 
@@ -77,14 +82,17 @@ export default function CustomContestSetup({ onBack }: CustomContestSetupProps) 
       <div className="shrink-0 flex flex-col gap-4 mt-auto items-center pt-4 border-t border-white/10 pb-1">
         <button 
           onClick={handleAddRow}
-          className="text-white/70 hover:text-white border-dashed border-2 border-white/20 hover:border-white/50 hover:bg-white/5 rounded-lg p-3 w-full transition-all duration-200"
+          disabled={isCreating}
+          className="text-white/70 hover:text-white border-dashed border-2 border-white/20 hover:border-white/50 hover:bg-white/5 rounded-lg p-3 w-full transition-all duration-200 disabled:opacity-50"
         >
           + Add another entry
         </button>
 
         <div className="flex gap-4 w-full justify-center mt-2">
-            <Button variant="secondary" onClick={onBack}>Cancel</Button>
-            <Button onClick={handleCreateGame}>Create & Start Game</Button>
+            <Button variant="secondary" onClick={onBack} disabled={isCreating}>Cancel</Button>
+            <Button onClick={handleCreateGame} disabled={isCreating}>
+              {isCreating ? "Creating Lobby..." : "Create & Start Game"}
+            </Button>
         </div>
       </div>
     </div>

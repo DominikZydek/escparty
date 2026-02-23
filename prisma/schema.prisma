@@ -60,6 +60,7 @@ model Entry {
   artist String
   songTitle String
   videoUrl String?
+  imageUrls String[] @default([])
   order Int @default(0)
   contestId String
   contest Contest @relation(fields: [contestId], references: [id])

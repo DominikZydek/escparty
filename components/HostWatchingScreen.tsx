@@ -76,8 +76,7 @@ export default function HostWatchingScreen({
 
         {currentEntry && currentEntry.videoUrl ? (
           <VideoPlayer
-            videoId={currentEntry.id}
-            videoUrl={currentEntry.videoUrl}
+            entry={currentEntry}
           />
         ) : (
           <div className="w-full aspect-video bg-black/80 flex items-center justify-center">
