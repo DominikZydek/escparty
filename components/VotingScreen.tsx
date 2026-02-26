@@ -34,20 +34,32 @@ export default function VotingScreen({ roomCode, playerId, entries }: VotingScre
   const handleAllocation = (points: number, entryId: string) => {
     setAllocations(prev => {
         const newAlloc = { ...prev };
-        Object.keys(newAlloc).forEach(key => {
-            if (newAlloc[Number(key)] === entryId) {
-                delete newAlloc[Number(key)];
-            }
-        });
+        
+        if (!entryId) {
+            delete newAlloc[points];
+            return newAlloc;
+        }
+
+        const existingPointValueForEntry = Object.keys(newAlloc).find(
+            key => newAlloc[Number(key)] === entryId
+        );
+
+        if (existingPointValueForEntry) {
+            delete newAlloc[Number(existingPointValueForEntry)];
+        }
+
         newAlloc[points] = entryId;
+        
         return newAlloc;
     });
   };
 
   const handleSubmit = async () => {
+    const requiredVotes = Math.min(POINTS_AVAILABLE.length, entries.length);
     const usedPoints = Object.keys(allocations).length;
-    if (usedPoints < POINTS_AVAILABLE.length) {
-        alert(`You must assign all points! (${usedPoints}/${POINTS_AVAILABLE.length})`);
+    
+    if (usedPoints < requiredVotes) {
+        alert(`You must assign all available points! (${usedPoints}/${requiredVotes})`);
         return;
     }
 
@@ -88,7 +100,7 @@ export default function VotingScreen({ roomCode, playerId, entries }: VotingScre
         {POINTS_AVAILABLE.map((points) => (
           <div key={points} className="flex items-center gap-4 bg-white/5 p-3 rounded-lg border border-white/10">
             <div className={`
-                w-12 h-12 flex items-center justify-center rounded-full font-bold text-xl
+                w-12 h-12 flex items-center justify-center rounded-full font-bold text-xl shrink-0
                 ${points === 12 ? 'bg-pink-600 shadow-[0_0_15px_rgba(219,39,119,0.5)]' : 
                   points === 10 ? 'bg-purple-600' : 
                   points === 8 ? 'bg-blue-600' : 'bg-gray-700'}
@@ -97,21 +109,24 @@ export default function VotingScreen({ roomCode, playerId, entries }: VotingScre
             </div>
 
             <select
-                className="flex-1 bg-transparent border-b border-white/30 py-2 outline-none text-lg option:bg-gray-900 text-white"
+                className="flex-1 bg-transparent border-b border-white/30 py-2 outline-none text-lg text-white cursor-pointer"
                 value={allocations[points] || ""}
                 onChange={(e) => handleAllocation(points, e.target.value)}
             >
-                <option value="" className="text-gray-500">Select country...</option>
-                {entries.map(entry => (
-                    <option 
-                        key={entry.id} 
-                        value={entry.id}
-                        disabled={usedEntryIds.includes(entry.id) && allocations[points] !== entry.id}
-                        className="bg-gray-900 text-white disabled:text-gray-600"
-                    >
-                        {entry.country} ({entry.artist})
-                    </option>
-                ))}
+                <option value="" className="text-gray-900">Select country...</option>
+                {entries.map(entry => {
+                    const isUsedElsewhere = usedEntryIds.includes(entry.id) && allocations[points] !== entry.id;
+                    
+                    return (
+                        <option 
+                            key={entry.id} 
+                            value={entry.id}
+                            className={`text-gray-900 font-medium ${isUsedElsewhere ? 'bg-gray-200 text-gray-400' : ''}`}
+                        >
+                            {entry.country} ({entry.artist})
+                        </option>
+                    )
+                })}
             </select>
           </div>
         ))}
@@ -121,7 +136,7 @@ export default function VotingScreen({ roomCode, playerId, entries }: VotingScre
         <div className="w-full max-w-md">
           <Button 
             onClick={handleSubmit} 
-            disabled={isSubmitting || Object.keys(allocations).length < POINTS_AVAILABLE.length}
+            disabled={isSubmitting || Object.keys(allocations).length < Math.min(POINTS_AVAILABLE.length, entries.length)}
           >
             {isSubmitting ? "Sending..." : "Submit Votes"}
           </Button>
