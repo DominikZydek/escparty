@@ -80,12 +80,17 @@ export default async function RoomPage({ params }: PageProps) {
             votes: { some: {} },
           },
         });
+        const contestEntriesForHost = await prisma.entry.findMany({
+          where: { contestId: room.contestId },
+          orderBy: { order: "asc" }
+        });
 
         return (
           <HostVotingDashboard
             roomCode={roomCode}
             totalPlayers={room.players.length}
             initialVotesCount={votedPlayersCount}
+            entries={contestEntriesForHost}
           />
         );
       }
