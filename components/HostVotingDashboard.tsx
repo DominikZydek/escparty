@@ -5,6 +5,7 @@ import Pusher from "pusher-js";
 import Button from "@/components/Button";
 import { endVoting } from "@/app/actions/room";
 import { useRouter } from "next/navigation";
+import { pauseBackgroundMusic, playBackgroundMusic } from "@/lib/audio";
 
 interface Entry {
   id: string;
@@ -33,6 +34,13 @@ export default function HostVotingDashboard({
   const [currentEntryIndex, setCurrentEntryIndex] = useState(0);
 
   const progress = totalPlayers > 0 ? (votesCount / totalPlayers) * 100 : 0;
+
+  useEffect(() => {
+    pauseBackgroundMusic();
+    return () => {
+      playBackgroundMusic();
+    };
+  }, []);
 
   useEffect(() => {
     const pusher = new Pusher(process.env.NEXT_PUBLIC_PUSHER_KEY!, {
@@ -106,7 +114,7 @@ export default function HostVotingDashboard({
                 Recap ({currentEntryIndex + 1}/{entries.length})
               </span>
               <span className="w-1 h-1 bg-white/30 rounded-full"></span>
-              <span className="text-white/90 font-bold">
+              <span className="text-white/90 font-bold truncate">
                 {currentEntry.country}
               </span>
             </p>

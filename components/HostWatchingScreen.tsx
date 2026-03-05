@@ -7,6 +7,7 @@ import { Entry } from "@prisma/client";
 import Button from "@/components/Button";
 import { playEntry, startVoting } from "@/app/actions/room";
 import VideoPlayer from "./VideoPlayer";
+import { pauseBackgroundMusic, playBackgroundMusic } from "@/lib/audio";
 
 interface HostWatchingScreenProps {
   roomCode: string;
@@ -26,6 +27,13 @@ export default function HostWatchingScreen({
   const [isStartingVoting, setIsStartingVoting] = useState(false);
 
   const currentEntry = entries.find((e) => e.id === currentEntryId);
+
+  useEffect(() => {
+    pauseBackgroundMusic();
+    return () => {
+      playBackgroundMusic();
+    };
+  }, []);
 
   useEffect(() => {
     const pusher = new Pusher(process.env.NEXT_PUBLIC_PUSHER_KEY!, {
@@ -75,9 +83,7 @@ export default function HostWatchingScreen({
         </div>
 
         {currentEntry && currentEntry.videoUrl ? (
-          <VideoPlayer
-            entry={currentEntry}
-          />
+          <VideoPlayer entry={currentEntry} />
         ) : (
           <div className="w-full aspect-video bg-black/80 flex items-center justify-center">
             <p className="text-white/50">Select a song...</p>
