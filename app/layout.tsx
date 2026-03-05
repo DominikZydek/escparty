@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { Montserrat } from "next/font/google";
 import "./globals.css";
-import GlobalAudio from "@/components/GlobalAudio";
+import AudioToggle from "@/components/AudioToggle";
 
 const montserrat = Montserrat({
   subsets: ["latin"],
@@ -24,7 +24,7 @@ export default function RootLayout({
       <body
         className={`${montserrat.variable} antialiased`}
       >
-        <GlobalAudio />
+        <AudioToggle />
         {children}
       </body>
     </html>
