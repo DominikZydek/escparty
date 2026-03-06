@@ -155,7 +155,7 @@ export default function HostVotingDashboard({
           disabled={isEnding}
           className="w-full py-3 text-sm"
         >
-          {isEnding ? "Calculating..." : "Reveal Results 🏆"}
+          {isEnding ? "Calculating..." : "Reveal Results"}
         </Button>
       </div>
     </div>

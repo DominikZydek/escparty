@@ -140,3 +140,25 @@ export async function startVoting(roomCode: string) {
     redirectUrl: `/room/${roomCode}`,
   });
 }
+
+export async function finishGame(roomCode: string) {
+  try {
+    await pusherServer.trigger(`room-${roomCode}`, "game-finished", {});
+    return { success: true };
+  } catch (error) {
+    console.error("Failed to finish game:", error);
+    return { error: "Failed to finish game" };
+  }
+}
+
+export async function tapEmoji(roomCode: string, playerId: string, emoji: string) {
+  try {
+    await pusherServer.trigger(`room-${roomCode}`, "emoji-tapped", {
+      playerId,
+      emoji,
+    });
+    return { success: true };
+  } catch (error) {
+    console.error("Failed to send emoji:", error);
+  }
+}
