@@ -2,6 +2,7 @@
 
 import prisma from "@/lib/prisma";
 import { fetchArtistImages } from "./image";
+import { getEnglishName } from "@/lib/countries";
 
 export async function getContests() {
   const contests = prisma.contest.findMany({
@@ -45,7 +46,7 @@ export async function createCustomContest(
       
       return {
         id: entry.id,
-        country: entry.country,
+        country: getEnglishName(entry.country),
         artist: entry.artist,
         songTitle: entry.songTitle,
         videoUrl: formatYoutubeUrl(entry.videoUrl) || null,

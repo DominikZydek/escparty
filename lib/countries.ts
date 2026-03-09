@@ -1508,3 +1508,7 @@ export function getCountryCode(name: string): string {
 export function getFlagColors(name: string): string[] {
     return COUNTRIES.find(c => c.name === name)?.flagColors || ["#eb0273", "#010a40"];
 }
+
+export function getEnglishName(name: string): string {
+    return COUNTRIES.find(c => c.altNames.includes(name))?.name || name;
+}
