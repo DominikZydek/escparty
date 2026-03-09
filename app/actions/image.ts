@@ -1,86 +1,99 @@
 "use server";
 
-async function searchWikimedia(query: string): Promise<string[]> {
-  const endpoint = `https://commons.wikimedia.org/w/api.php`;
-  
-  const params = new URLSearchParams({
-    action: "query",
-    format: "json",
-    prop: "imageinfo",
-    generator: "search",
-    gsrnamespace: "6",
-    gsrsearch: query,
-    gsrlimit: "15",
-    iiprop: "url",
-    iiurlwidth: "800",
-    origin: "*"
-  });
+import * as cheerio from "cheerio";
 
+async function fetchFromLastFm(artistQuery: string): Promise<string[]> {
   try {
-    const res = await fetch(`${endpoint}?${params.toString()}`);
-    const data = await res.json();
+    const formattedArtist = encodeURIComponent(artistQuery.trim()).replace(
+      /%20/g,
+      "+",
+    );
+    const url = `https://www.last.fm/music/${formattedArtist}/+images`;
 
-    if (!data.query || !data.query.pages) {
-      return [];
-    }
+    const response = await fetch(url, {
+      headers: {
+        "User-Agent":
+          "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+      },
+      next: { revalidate: 86400 },
+    });
 
-    const pages = Object.values(data.query.pages) as any[];
-    
-    const imageUrls = pages
-      .map(page => page.imageinfo?.[0]?.thumburl || page.imageinfo?.[0]?.url)
-      .filter(url => {
-        if (!url) return false;
-        const lowerUrl = url.toLowerCase();
-        return lowerUrl.endsWith('.jpg') || lowerUrl.endsWith('.jpeg') || lowerUrl.endsWith('.png');
-      });
+    if (!response.ok) return [];
+
+    const html = await response.text();
+    const $ = cheerio.load(html);
+    const imageUrls: string[] = [];
+
+    $(".image-list img").each((index, element) => {
+      if (imageUrls.length >= 15) return false;
+      const src = $(element).attr("src");
+      if (src) {
+        const highResUrl = src.replace(/\/i\/u\/[a-zA-Z0-9]+\//, "/i/u/ar0/");
+        imageUrls.push(highResUrl);
+      }
+    });
 
     return imageUrls;
   } catch (error) {
-    console.error(`Error while querying: ${query}`, error);
+    console.error(`Last.fm error dla ${artistQuery}:`, error);
     return [];
   }
 }
 
-export async function fetchArtistImages(
-  artist: string, 
-  country: string, 
-  isEurovision: boolean = true
-): Promise<string[]> {
-  console.log(`Searching for pictures of: ${artist} (${country}) [Is it ESC: ${isEurovision}]`);
-  
-  try {
-    let urls: string[] = [];
+function interleaveArrays(arrays: string[][]): string[] {
+  const result: string[] = [];
+  const maxLength = Math.max(...arrays.map((arr) => arr.length));
 
-    if (isEurovision) {
-      // EUROVISION
-      urls = await searchWikimedia(`${artist} Eurovision ${country}`);
+  for (let i = 0; i < maxLength; i++) {
+    for (const arr of arrays) {
+      if (arr[i]) result.push(arr[i]);
+    }
+  }
+  return result;
+}
 
-      if (urls.length < 3) {
-        const fallbackUrls = await searchWikimedia(`${artist} Eurovision`);
-        urls = [...new Set([...urls, ...fallbackUrls])]; 
-      }
-      if (urls.length < 3) {
-        const fallbackUrls2 = await searchWikimedia(artist);
-        urls = [...new Set([...urls, ...fallbackUrls2])];
-      }
-    } else {
-      // CUSTOM CONTEST
-      urls = await searchWikimedia(artist);
+function fillToTarget(images: string[], target: number): string[] {
+  if (images.length === 0) return [];
+  const result: string[] = [];
+  while (result.length < target) {
+    result.push(...images);
+  }
+  return result.slice(0, target);
+}
 
-      // additional steps
-      if (urls.length < 3) {
-        const fallbackUrls = await searchWikimedia(`${artist} singer`);
-        urls = [...new Set([...urls, ...fallbackUrls])];
-      }
-      if (urls.length < 3) {
-        const fallbackUrls2 = await searchWikimedia(`${artist} performing`);
-        urls = [...new Set([...urls, ...fallbackUrls2])];
+export async function fetchArtistImages(artist: string): Promise<string[]> {
+  const TARGET_COUNT = 15;
+
+  // step 1: search for exact match
+  let images = await fetchFromLastFm(artist);
+
+  if (images.length >= 3) {
+    return fillToTarget(images, TARGET_COUNT);
+  }
+
+  // step 2: identify connecting words and split searching
+  const splitRegex = /\s+(?:ft\.|feat\.|feat|&|x|,|and)\s+/i;
+
+  if (splitRegex.test(artist)) {
+    const individualArtists = artist
+      .split(splitRegex)
+      .map((a) => a.trim())
+      .filter(Boolean);
+
+    if (individualArtists.length > 1) {
+      const results = await Promise.all(
+        individualArtists.map((a) => fetchFromLastFm(a)),
+      );
+      const combinedImages = interleaveArrays(results);
+
+      if (combinedImages.length > 0) {
+        return fillToTarget(combinedImages, TARGET_COUNT);
       }
     }
-
-    return urls.slice(0, 10);
-  } catch (error) {
-    console.error("Error while fetching pictures:", error);
-    return [];
   }
+  // fallback if there is absolutely no pics
+  if (images.length === 0) {
+    return Array(TARGET_COUNT).fill("/fallback-postcard.png");
+  }
+  return fillToTarget(images, TARGET_COUNT);
 }
