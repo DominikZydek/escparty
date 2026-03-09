@@ -1,63 +1,40 @@
-import React, { useMemo, useEffect, useState } from "react";
-import { AbsoluteFill, useCurrentFrame, useVideoConfig, Img, interpolate, spring, Sequence, random, delayRender, continueRender } from "remotion";
+import React, { useEffect, useState } from "react";
+import { AbsoluteFill, useCurrentFrame, useVideoConfig, Img, interpolate, Sequence, delayRender, continueRender, spring, Easing } from "remotion";
 
-const EuroImage: React.FC<{ src: string; style?: React.CSSProperties; delayFrames?: number; zIndex?: number }> = ({ src, style, delayFrames = 0, zIndex = 1 }) => {
+const FullscreenImage: React.FC<{ src: string; alignment: string }> = ({ src, alignment }) => {
   const frame = useCurrentFrame();
-  const opacity = interpolate(frame - delayFrames, [0, 15], [0, 1], { extrapolateLeft: "clamp", extrapolateRight: "clamp" });
-  const scale = interpolate(frame - delayFrames, [0, 60], [1.1, 1], { extrapolateLeft: "clamp", extrapolateRight: "clamp" });
-  const customTransform = style?.transform || "";
-  const customStyle = { ...style };
-  delete customStyle.transform; 
+  const { durationInFrames } = useVideoConfig();
+  const scale = interpolate(frame, [0, durationInFrames], [1, 1.05]);
+
   return (
-    <div style={{ position: "absolute", ...customStyle, zIndex, opacity, transform: `scale(${scale}) ${customTransform}`, borderRadius: "24px", boxShadow: "0 20px 50px rgba(0,0,0,0.5)", overflow: "hidden", backgroundColor: "rgba(0,0,0,0.2)" }}>
-      <Img src={src} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
-    </div>
+    <AbsoluteFill style={{ overflow: "hidden" }}>
+      <Img
+        src={src}
+        style={{
+          width: "100%",
+          height: "100%",
+          objectFit: "cover",
+          objectPosition: alignment, // Dynamiczne wyrównanie wczytane z propsów
+          transform: `scale(${scale})`
+        }}
+      />
+    </AbsoluteFill>
   );
 };
 
-type SceneProps = { getImg: (offset: number) => string };
+export interface PostcardProps {
+  artistName: string;
+  songTitle: string;
+  country: string;
+  images: string[];
+}
 
-const Layouts = {
-  Opening: ({ getImg }: SceneProps) => (
-    <EuroImage src={getImg(0)} style={{ left: "15%", top: "10%", width: "70%", height: "80%" }} />
-  ),
-  Split: ({ getImg }: SceneProps) => (
-    <><EuroImage src={getImg(0)} style={{ left: "5%", top: "10%", width: "42%", height: "80%" }} delayFrames={0} /><EuroImage src={getImg(1)} style={{ right: "5%", top: "10%", width: "42%", height: "80%" }} delayFrames={10} /></>
-  ),
-  Triptych: ({ getImg }: SceneProps) => (
-    <><EuroImage src={getImg(0)} style={{ left: '5%', top: '10%', width: '45%', height: '55%' }} delayFrames={0} zIndex={10} /><EuroImage src={getImg(1)} style={{ right: '5%', top: '35%', width: '45%', height: '55%' }} delayFrames={10} zIndex={11} /><EuroImage src={getImg(2)} style={{ left: '27.5%', top: '22.5%', width: '45%', height: '55%' }} delayFrames={20} zIndex={12} /></>
-  ),
-  Mosaic: ({ getImg }: SceneProps) => (
-    <><EuroImage src={getImg(0)} style={{ left: "10%", top: "10%", width: "38%", height: "38%" }} delayFrames={0} /><EuroImage src={getImg(1)} style={{ right: "10%", top: "10%", width: "38%", height: "38%" }} delayFrames={5} /><EuroImage src={getImg(2)} style={{ left: "10%", bottom: "10%", width: "38%", height: "38%" }} delayFrames={10} /><EuroImage src={getImg(3)} style={{ right: "10%", bottom: "10%", width: "38%", height: "38%" }} delayFrames={15} /></>
-  ),
-  Polaroids: ({ getImg }: SceneProps) => (
-    <><EuroImage src={getImg(0)} style={{ left: "10%", top: "20%", width: "40%", height: "60%", transform: "rotate(-12deg)" }} delayFrames={0} zIndex={10} /><EuroImage src={getImg(1)} style={{ right: "10%", top: "15%", width: "40%", height: "60%", transform: "rotate(15deg)" }} delayFrames={8} zIndex={11} /><EuroImage src={getImg(2)} style={{ left: "30%", top: "15%", width: "40%", height: "70%" }} delayFrames={16} zIndex={12} /></>
-  ),
-  Filmstrip: ({ getImg }: SceneProps) => (
-    <><EuroImage src={getImg(0)} style={{ left: "5%", top: "25%", width: "20%", height: "50%" }} delayFrames={0} /><EuroImage src={getImg(1)} style={{ left: "28%", top: "25%", width: "20%", height: "50%" }} delayFrames={5} /><EuroImage src={getImg(2)} style={{ left: "51%", top: "25%", width: "20%", height: "50%" }} delayFrames={10} /><EuroImage src={getImg(3)} style={{ left: "74%", top: "25%", width: "20%", height: "50%" }} delayFrames={15} /></>
-  ),
-  Diagonal: ({ getImg }: SceneProps) => (
-    <><EuroImage src={getImg(0)} style={{ left: "10%", top: "5%", width: "45%", height: "45%" }} delayFrames={0} /><EuroImage src={getImg(1)} style={{ right: "10%", bottom: "5%", width: "45%", height: "45%" }} delayFrames={10} /></>
-  ),
-  Focus: ({ getImg }: SceneProps) => (
-    <><EuroImage src={getImg(0)} style={{ left: "5%", top: "25%", width: "25%", height: "50%" }} delayFrames={0} /><EuroImage src={getImg(1)} style={{ right: "5%", top: "25%", width: "25%", height: "50%" }} delayFrames={5} /><EuroImage src={getImg(2)} style={{ left: "25%", top: "10%", width: "50%", height: "80%" }} delayFrames={15} zIndex={10} /></>
-  ),
-  Cascading: ({ getImg }: SceneProps) => (
-    <><EuroImage src={getImg(0)} style={{ left: "10%", top: "10%", width: "35%", height: "45%", transform: "rotate(-5deg)" }} delayFrames={0} zIndex={10} /><EuroImage src={getImg(1)} style={{ left: "32%", top: "25%", width: "35%", height: "45%", transform: "rotate(5deg)" }} delayFrames={10} zIndex={11} /><EuroImage src={getImg(2)} style={{ right: "10%", bottom: "10%", width: "35%", height: "45%", transform: "rotate(-2deg)" }} delayFrames={20} zIndex={12} /></>
-  ),
-  Closing: ({ getImg }: SceneProps) => (
-    <EuroImage src={getImg(0)} style={{ right: "5%", top: "10%", width: "60%", height: "80%" }} />
-  )
-};
-
-export interface PostcardProps { artistName: string; country: string; images: string[]; }
-
-export const EurovisionPostcard: React.FC<PostcardProps> = ({ artistName, country, images }) => {
-  const frame = useCurrentFrame();
+export const EurovisionPostcard: React.FC<PostcardProps> = ({ artistName, songTitle, country, images }) => {
   const { fps, durationInFrames } = useVideoConfig();
-  const sceneDuration = Math.floor(durationInFrames / 6);
+  const frame = useCurrentFrame();
 
-  const [handle] = useState(() => delayRender("Pobieranie zdjęć przed startem"));
+  const [handle] = useState(() => delayRender("Pobieranie i mierzenie zdjęć"));
+  const [alignments, setAlignments] = useState<Record<string, string>>({});
 
   useEffect(() => {
     if (!images || images.length === 0) {
@@ -66,81 +43,251 @@ export const EurovisionPostcard: React.FC<PostcardProps> = ({ artistName, countr
     }
 
     const preloadImages = async () => {
+      const newAlignments: Record<string, string> = {};
+      
       const promises = images.map((src) => {
         return new Promise((resolve) => {
           const img = new Image();
-          img.onload = resolve;
-          img.onerror = resolve; 
+          img.onload = () => {
+            // Mierzymy proporcje zdjęcia i zapisujemy wynik do słownika
+            newAlignments[src] = img.naturalHeight > img.naturalWidth ? "top center" : "center";
+            resolve(true);
+          };
+          img.onerror = resolve;
           img.src = src;
         });
       });
 
       await Promise.all(promises);
+      setAlignments(newAlignments);
       continueRender(handle);
     };
 
     preloadImages();
   }, [images, handle]);
 
-  const getImgForScene = (sceneIndex: number, imgOffset: number) => {
-    if (!images || images.length === 0) return "https://picsum.photos/800/1000";
-    const globalIndex = (sceneIndex * 3) + imgOffset; 
-    return images[globalIndex % images.length];
+  // --- PALETA KOLORÓW ---
+  const colors = {
+    pink: "#eb0273",
+    purple: "#010a40",
+    cyan: "#21d9c9",
+    red: "#f20c59",
   };
 
-  const dynamicScenes = useMemo(() => {
-    const middlePool = [
-      Layouts.Split, 
-      Layouts.Triptych, 
-      Layouts.Mosaic, 
-      Layouts.Polaroids, 
-      Layouts.Filmstrip, 
-      Layouts.Diagonal, 
-      Layouts.Focus, 
-      Layouts.Cascading
-    ];
-    
-    const shuffled = [...middlePool];
-    
-    for (let i = shuffled.length - 1; i > 0; i--) {
-      const seed = `${artistName}-${i}`;
-      const randomIndex = Math.floor(random(seed) * (i + 1));
-      [shuffled[i], shuffled[randomIndex]] = [shuffled[randomIndex], shuffled[i]];
-    }
+  // --- MATEMATYKA CZASOWA ---
+  const totalImages = 14; 
+  const introDuration = fps * 4;   
+  const outroDuration = fps * 7; 
+  
+  const remainingFrames = durationInFrames - introDuration;
+  const fastImageDuration = Math.floor(remainingFrames / (totalImages - 1));
 
-    return [
-      Layouts.Opening,
-      shuffled[0],
-      shuffled[1],
-      shuffled[2],
-      shuffled[3],
-      Layouts.Closing
-    ];
-  }, [artistName]);
+  // --- DYNAMIKA INTRO (Flash & Glitch) ---
+  const flashStart = Math.floor(fps * 1.0); 
+  const slamFrame = Math.floor(fps * 1.6);  
+  
+  const isPreFlash = frame < flashStart;
+  const isFlashing = frame >= flashStart && frame < slamFrame;
+  const isSlammed = frame >= slamFrame;
 
-  const bgPosX = interpolate(frame, [0, durationInFrames / 2, durationInFrames], [0, 100, 0]);
-  const bgPosY = interpolate(frame, [0, durationInFrames / 4, durationInFrames * 0.75, durationInFrames], [0, 0, 100, 0]);
-  const textOpacity = interpolate(frame, [0, 15], [0, 1], { extrapolateRight: "clamp" });
-  const textY = spring({ frame, fps, config: { damping: 12 } });
+  const preFlashOpacity = interpolate(frame, [0, 15], [0, 1], { extrapolateRight: "clamp" });
+  const preFlashY = interpolate(frame, [0, 30], [20, 0], { extrapolateRight: "clamp" });
+
+  const flashStyles = [
+    { font: "Courier New, monospace", color: colors.cyan, scale: 1.2 },
+    { font: "Times New Roman, serif", color: colors.red, scale: 0.8 },
+    { font: "Arial, sans-serif", color: colors.pink, scale: 1.5 },
+    { font: "Georgia, serif", color: "#ffffff", scale: 0.9 },
+    { font: "Verdana, sans-serif", color: colors.cyan, scale: 1.1 },
+  ];
+  const currentFlash = flashStyles[Math.floor(frame / 3) % flashStyles.length];
+
+  const slamScale = spring({
+    frame: Math.max(0, frame - slamFrame),
+    fps,
+    config: { damping: 12, mass: 0.5 },
+  });
+  const countryScale = interpolate(slamScale, [0, 1], [3, 1]);
+
+  // --- DYNAMIKA OUTRO ---
+  const outroStartFrame = durationInFrames - outroDuration;
+  const isOutro = frame >= outroStartFrame;
+  const outroLocalFrame = Math.max(0, frame - outroStartFrame);
+
+  const overlayOpacity = interpolate(outroLocalFrame, [0, 30], [0, 0.85], { extrapolateRight: "clamp" });
+  
+  const countryOpacity = interpolate(outroLocalFrame, [15, 45], [0, 1], { extrapolateRight: "clamp" });
+  const lineScale = spring({ frame: Math.max(0, outroLocalFrame - 40), fps, config: { damping: 14 } });
+  
+  const textOpacity = interpolate(outroLocalFrame, [60, 90], [0, 1], { extrapolateRight: "clamp" });
+  const textY = interpolate(outroLocalFrame, [60, 90], [40, 0], { extrapolateRight: "clamp", easing: Easing.out(Easing.quad) });
+
+  const songOpacity = interpolate(outroLocalFrame, [75, 105], [0, 1], { extrapolateRight: "clamp" });
+  const songY = interpolate(outroLocalFrame, [75, 105], [30, 0], { extrapolateRight: "clamp", easing: Easing.out(Easing.quad) });
 
   return (
-    <AbsoluteFill style={{ backgroundColor: "#010a40", overflow: "hidden", fontFamily: "Montserrat, sans-serif" }}>
-      
-      <AbsoluteFill style={{ backgroundImage: `radial-gradient(circle at 15% 50%, #eb0273, transparent 60%), radial-gradient(circle at 85% 30%, #21d9c9, transparent 60%), radial-gradient(circle at 50% 80%, #f20c59, transparent 60%)`, backgroundSize: "180% 180%", backgroundPosition: `${bgPosX}% ${bgPosY}%`, filter: "blur(120px)", opacity: 0.7, zIndex: 0 }} />
-      <AbsoluteFill style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)' opacity='1'/%3E%3C/svg%3E")`, opacity: 0.05, mixBlendMode: "overlay", pointerEvents: "none", zIndex: 1 }} />
+    <AbsoluteFill style={{ backgroundColor: colors.purple, overflow: "hidden" }}>
 
-      <AbsoluteFill style={{ zIndex: 2 }}>
-        {dynamicScenes.map((SceneComponent, index) => (
-          <Sequence key={index} from={sceneDuration * index} durationInFrames={index === 5 ? undefined : sceneDuration}>
-            <SceneComponent getImg={(offset) => getImgForScene(index, offset)} />
+      {/* --- SEKWENCJA ZDJĘĆ POD SPODEM (Z NAKŁADANIEM WARSTW) --- */}
+      {Array.from({ length: totalImages }).map((_, index) => {
+        const src = images && images.length > 0 ? images[index % images.length] : "https://picsum.photos/1920/1080";
+        
+        // Czas startu pozostaje bez zmian
+        const startFrame = index === 0 ? 0 : introDuration + (index - 1) * fastImageDuration;
+        
+        // ZMIANA: Każda sekwencja trwa od swojego momentu startu aż do samiutkiego końca filmu!
+        // Nowe zdjęcia po prostu przykrywają stare z góry. Zero pustych klatek.
+        const duration = durationInFrames - startFrame;
+
+        return (
+          <Sequence key={index} from={startFrame} durationInFrames={duration}>
+            <FullscreenImage 
+              src={src} 
+              alignment={alignments[src] || "center"} 
+            />
           </Sequence>
-        ))}
-      </AbsoluteFill>
+        );
+      })}
 
-      <div style={{ position: "absolute", bottom: 80, left: 100, opacity: textOpacity, transform: `translateY(${100 - textY * 100}px)`, color: "#ffffff", textShadow: "0 4px 15px rgba(0,0,0,0.8)", zIndex: 100 }}>
-        <h1 style={{ fontSize: "90px", margin: 0, fontWeight: 800 }}>{artistName}</h1>
-        <h2 style={{ fontSize: "40px", margin: 0, fontWeight: 400, letterSpacing: "8px", color: "#21d9c9" }}>{country.toUpperCase()}</h2>
-      </div>
+      {/* --- TYPOGRAFIA: INTRO --- */}
+      <Sequence from={0} durationInFrames={introDuration}>
+        <AbsoluteFill style={{
+          justifyContent: "center",
+          alignItems: "center",
+          backgroundColor: isPreFlash ? "rgba(1, 10, 64, 0.4)" : (isFlashing ? "rgba(235, 2, 115, 0.2)" : "rgba(1, 10, 64, 0.1)"),
+          transition: "background-color 0.1s"
+        }}>
+          
+          {isPreFlash && (
+            <h2 style={{
+              fontFamily: "'Brush Script MT', 'Comic Sans MS', cursive",
+              fontSize: "90px",
+              color: "white",
+              opacity: preFlashOpacity,
+              transform: `translateY(${preFlashY}px) rotate(-5deg)`,
+              margin: 0,
+              textShadow: "0px 5px 15px rgba(0,0,0,0.5)"
+            }}>
+              Representing...
+            </h2>
+          )}
+
+          {isFlashing && (
+            <h1 style={{
+              fontFamily: currentFlash.font,
+              fontSize: "150px",
+              color: currentFlash.color,
+              margin: 0,
+              textTransform: "uppercase",
+              transform: `scale(${currentFlash.scale}) rotate(${Math.random() * 4 - 2}deg)`,
+              textShadow: `10px 10px 0px ${colors.purple}`
+            }}>
+              {country}
+            </h1>
+          )}
+
+          {isSlammed && (
+            <div style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
+              <p style={{
+                fontFamily: "Montserrat, sans-serif",
+                fontSize: "30px",
+                color: "white",
+                margin: "0 0 -20px 0",
+                textTransform: "uppercase",
+                letterSpacing: "10px",
+                opacity: slamScale
+              }}>
+                Representing
+              </p>
+              <h1 style={{
+                fontFamily: "Impact, sans-serif",
+                fontSize: "220px",
+                color: colors.cyan, 
+                margin: 0,
+                textTransform: "uppercase",
+                lineHeight: 1,
+                textShadow: `15px 15px 0px ${colors.pink}`,
+                transform: `scale(${countryScale})`,
+                opacity: slamScale
+              }}>
+                {country}
+              </h1>
+            </div>
+          )}
+        </AbsoluteFill>
+      </Sequence>
+
+      {/* --- TYPOGRAFIA: OUTRO --- */}
+      {isOutro && (
+        <AbsoluteFill style={{
+          backgroundColor: `rgba(1, 10, 64, ${overlayOpacity})`, 
+          justifyContent: "center",
+          alignItems: "center",
+          zIndex: 10
+        }}>
+          <div style={{
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "center",
+            width: "80%"
+          }}>
+            <h3 style={{
+              color: colors.cyan,
+              fontFamily: "Montserrat, sans-serif",
+              fontSize: "50px",
+              letterSpacing: "20px",
+              margin: 0,
+              textTransform: "uppercase",
+              fontWeight: 600,
+              opacity: countryOpacity,
+              transform: `translateY(${50 - countryOpacity * 50}px)`
+            }}>
+              {country}
+            </h3>
+            
+            <div style={{
+              width: `${lineScale * 100}%`,
+              height: "8px",
+              backgroundColor: colors.pink,
+              margin: "30px 0",
+              borderRadius: "4px",
+              boxShadow: `0 0 20px ${colors.pink}`
+            }} />
+            
+            <h1 style={{
+              color: "white",
+              fontFamily: "Impact, sans-serif",
+              fontSize: "140px",
+              margin: 0,
+              textTransform: "uppercase",
+              textShadow: `0px 10px 30px ${colors.red}`, 
+              textAlign: "center",
+              lineHeight: 1.1,
+              opacity: textOpacity,
+              transform: `translateY(${textY}px)`
+            }}>
+              {artistName}
+            </h1>
+
+            <h2 style={{
+              color: colors.pink,
+              fontFamily: "Montserrat, sans-serif",
+              fontSize: "50px",
+              letterSpacing: "8px",
+              margin: "15px 0 0 0",
+              textTransform: "uppercase",
+              fontWeight: 500,
+              textAlign: "center",
+              opacity: songOpacity,
+              transform: `translateY(${songY}px)`,
+              textShadow: `0px 5px 15px rgba(0,0,0,0.5)`
+            }}>
+              "{songTitle}"
+            </h2>
+          </div>
+        </AbsoluteFill>
+      )}
+
     </AbsoluteFill>
   );
 };

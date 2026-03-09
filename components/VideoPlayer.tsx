@@ -92,6 +92,7 @@ const VideoPlayer = React.memo(
                 component={EurovisionPostcard}
                 inputProps={{
                   artistName: entry.artist,
+                  songTitle: entry.songTitle,
                   country: entry.country,
                   images: finalImages,
                 }}
