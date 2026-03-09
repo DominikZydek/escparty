@@ -1,5 +1,6 @@
 "use client";
 
+import { getCountryCode, getFlagColors } from "@/lib/countries"
 import React, { useState, useEffect, useMemo } from "react";
 import Pusher from "pusher-js";
 import { motion, AnimatePresence } from "framer-motion";
@@ -72,13 +73,11 @@ export default function ResultsScreen({
     }
 
     sortedPlayers.forEach((player, index) => {
-      // JEŚLI GRA ZAKOŃCZONA: Po prostu sumujemy wszystko do kupy, bez "aktywnych" pigułek
       if (showWinner) {
         player.votes.forEach((v) => {
           scores[v.entryId].total += v.points;
         });
       }
-      // W TRAKCIE GRY: Standardowa logika wyświetlania dodawanych punktów
       else {
         if (index < currentVoterIndex) {
           player.votes.forEach((v) => {
@@ -442,7 +441,7 @@ export default function ResultsScreen({
                 </div>
                 <div className="flex-1 z-10 flex flex-col justify-center overflow-hidden">
                   <div className="font-bold text-base md:text-lg leading-none truncate">
-                    {entry.country}
+                    <span className={`mr-2 fi fi-${getCountryCode(entry.country)}`}></span>{entry.country}
                   </div>
                   <div className="text-xs opacity-60 truncate mt-0.5">
                     {entry.artist}

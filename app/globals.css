@@ -1,5 +1,7 @@
 @import "tailwindcss";
 
+@import "../node_modules/flag-icons/css/flag-icons.min.css";
+
 :root {
   --gradient-pink: #eb0273;
   --gradient-purple: #010a40;
