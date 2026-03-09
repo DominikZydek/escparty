@@ -38,7 +38,7 @@ async function main() {
     
     process.stdout.write(`📸 [${i + 1}/${entriesWithoutImages.length}] ${entry.artist} (${entry.country})... `);
     
-    const images = await fetchArtistImages(entry.artist, entry.country);
+    const images = await fetchArtistImages(entry.artist);
 
     if (images.length > 0) {
       await prisma.entry.update({
