@@ -11,6 +11,7 @@
     "fetch-images": "tsx prisma/fetch-images.ts"
   },
   "dependencies": {
+    "@hello-pangea/dnd": "^18.0.1",
     "@prisma/adapter-pg": "^7.3.0",
     "@prisma/client": "^7.3.0",
     "@remotion/player": "^4.0.427",
