@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import Pusher from "pusher-js";
 import { useRouter } from "next/navigation";
 import { Entry } from "@prisma/client";
@@ -26,7 +26,11 @@ export default function HostWatchingScreen({
   );
   const [isStartingVoting, setIsStartingVoting] = useState(false);
 
-  const currentEntry = entries.find((e) => e.id === currentEntryId);
+  const currentEntryIndex = entries.findIndex((e) => e.id === currentEntryId);
+  const currentEntry = entries[currentEntryIndex];
+
+  const hasNext = currentEntryIndex !== -1 && currentEntryIndex < entries.length - 1;
+  const hasPrev = currentEntryIndex > 0;
 
   useEffect(() => {
     pauseBackgroundMusic();
@@ -54,13 +58,28 @@ export default function HostWatchingScreen({
     };
   }, [roomCode, router]);
 
-  const handlePlay = async (entryId: string) => {
+  const handlePlay = useCallback(async (entryId: string) => {
     try {
       await playEntry(roomCode, entryId);
     } catch (error) {
       console.error("Failed to play video:", error);
     }
-  };
+  }, [roomCode]);
+
+
+  const handleNext = useCallback(() => {
+    if (hasNext) {
+      const nextEntryId = entries[currentEntryIndex + 1].id;
+      handlePlay(nextEntryId);
+    }
+  }, [hasNext, entries, currentEntryIndex, handlePlay]);
+
+  const handlePrev = useCallback(() => {
+    if (hasPrev) {
+      const prevEntryId = entries[currentEntryIndex - 1].id;
+      handlePlay(prevEntryId);
+    }
+  }, [hasPrev, entries, currentEntryIndex, handlePlay]);
 
   const handleStartVoting = async () => {
     setIsStartingVoting(true);
@@ -83,7 +102,11 @@ export default function HostWatchingScreen({
         </div>
 
         {currentEntry && currentEntry.videoUrl ? (
-          <VideoPlayer entry={currentEntry} />
+          <VideoPlayer 
+            entry={currentEntry} 
+            onNext={hasNext ? handleNext : undefined}
+            onPrev={hasPrev ? handlePrev : undefined}
+          />
         ) : (
           <div className="w-full aspect-video bg-black/80 flex items-center justify-center">
             <p className="text-white/50">Select a song...</p>

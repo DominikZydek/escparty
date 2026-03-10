@@ -4,15 +4,17 @@ import React, { useState, useEffect, useRef, useCallback } from "react";
 import { Player } from "@remotion/player";
 import { EurovisionPostcard } from "../remotion/EurovisionPostcard";
 import { Entry } from "@prisma/client";
-import { Maximize2, Minimize2 } from "lucide-react";
+import { Maximize2, Minimize2, ChevronLeft, ChevronRight } from "lucide-react";
 import { playTheme, stopTheme } from "@/lib/audio";
 
 interface VideoPlayerProps {
   entry: Entry;
+  onNext?: () => void;
+  onPrev?: () => void;
 }
 
 const VideoPlayer = React.memo(
-  ({ entry }: VideoPlayerProps) => {
+  ({ entry, onNext, onPrev }: VideoPlayerProps) => {
     const [showPostcard, setShowPostcard] = useState(true);
     const [isFullScreen, setIsFullScreen] = useState(false);
 
@@ -63,7 +65,7 @@ const VideoPlayer = React.memo(
           await document.exitFullscreen();
         }
       } catch (err) {
-        console.error("Błąd podczas przełączania trybu pełnoekranowego:", err);
+        console.error("Full screen error:", err);
       }
     }, []);
 
@@ -73,17 +75,33 @@ const VideoPlayer = React.memo(
         ? entry.imageUrls
         : ["/fallback-postcard.jpg"];
 
+    const controlButtonClass = "bg-black/50 hover:bg-black/80 p-3 rounded-full text-white/70 hover:text-white transition-all backdrop-blur-md border border-white/10 flex items-center justify-center";
+
     return (
       <div
         ref={containerRef}
         className="w-full aspect-video bg-black rounded-2xl overflow-hidden shadow-2xl relative group"
       >
-        <button
-          onClick={toggleFullScreen}
-          className="absolute top-4 right-4 z-110 bg-black/50 hover:bg-black/80 p-3 rounded-full text-white/70 hover:text-white transition-all backdrop-blur-md border border-white/10 opacity-0 group-hover:opacity-100"
-        >
-          {isFullScreen ? <Minimize2 size={24} /> : <Maximize2 size={24} />}
-        </button>
+        <div className="absolute top-4 right-4 z-110 flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+          
+          {onPrev && (
+            <button onClick={onPrev} className={controlButtonClass} title="Previous">
+              <ChevronLeft size={24} />
+            </button>
+          )}
+
+          {onNext && (
+            <button onClick={onNext} className={controlButtonClass} title="Next">
+              <ChevronRight size={24} />
+            </button>
+          )}
+
+          <div className="w-px h-8 bg-white/20 mx-1"></div>
+
+          <button onClick={toggleFullScreen} className={controlButtonClass} title="Full screen">
+            {isFullScreen ? <Minimize2 size={24} /> : <Maximize2 size={24} />}
+          </button>
+        </div>
 
         <div className="w-full h-full flex items-center justify-center">
           {showPostcard ? (
