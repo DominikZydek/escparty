@@ -150,15 +150,3 @@ export async function finishGame(roomCode: string) {
     return { error: "Failed to finish game" };
   }
 }
-
-export async function tapEmoji(roomCode: string, playerId: string, emoji: string) {
-  try {
-    await pusherServer.trigger(`room-${roomCode}`, "emoji-tapped", {
-      playerId,
-      emoji,
-    });
-    return { success: true };
-  } catch (error) {
-    console.error("Failed to send emoji:", error);
-  }
-}
