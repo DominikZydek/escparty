@@ -53,6 +53,10 @@ export default function HostVotingDashboard({
       setVotesCount((prev) => prev + 1);
     });
 
+    channel.bind("vote-withdrawn", () => {
+      setVotesCount((prev) => Math.max(0, prev - 1));
+    });
+
     channel.bind("show-results", () => {
       router.refresh();
     });

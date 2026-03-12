@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { Entry } from "@prisma/client";
-import { submitVotes } from "@/app/actions/vote";
+import { submitVotes, withdrawVotes } from "@/app/actions/vote"; // Dodany import withdrawVotes
 import Button from "@/components/Button";
 import Pusher from "pusher-js";
 import { useRouter } from "next/navigation";
@@ -47,6 +47,7 @@ export default function VotingScreen({
     channel.bind("show-results", () => router.refresh());
     return () => {
       pusher.unsubscribe(`room-${roomCode}`);
+      pusher.disconnect();
     };
   }, [roomCode, router]);
 
@@ -75,6 +76,19 @@ export default function VotingScreen({
       setHasVoted(true);
     } catch (error) {
       alert("Error submitting votes");
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleWithdraw = async () => {
+    setIsSubmitting(true);
+    try {
+      await withdrawVotes(playerId, roomCode);
+      setHasVoted(false);
+    } catch (error) {
+      alert("Error withdrawing votes");
+    } finally {
       setIsSubmitting(false);
     }
   };
@@ -85,11 +99,25 @@ export default function VotingScreen({
     return (
       <div className="flex flex-col items-center justify-center min-h-screen text-white p-5 text-center">
         <h1 className="text-4xl font-bold mb-4">Votes Sent!</h1>
-        <p className="text-xl opacity-70">
+        <p className="text-xl opacity-70 mb-8">
           Get ready for the results ceremony.
         </p>
-        <div className="mt-8 animate-pulse">
-          <div className="w-16 h-16 border-4 border-white/20 border-t-white rounded-full animate-spin mx-auto" />
+
+        <div className="w-full max-w-xs space-y-8">
+          <div className="animate-pulse">
+            <div className="w-16 h-16 border-4 border-white/20 border-t-white rounded-full animate-spin mx-auto" />
+          </div>
+
+          <div className="pt-8">
+            <p className="text-sm text-white/50 mb-4">Made a mistake?</p>
+            <button
+              onClick={handleWithdraw}
+              disabled={isSubmitting}
+              className="px-6 py-2 bg-white/10 hover:bg-white/20 rounded-full text-sm font-bold transition-colors disabled:opacity-50"
+            >
+              {isSubmitting ? "Withdrawing..." : "Edit Votes"}
+            </button>
+          </div>
         </div>
       </div>
     );

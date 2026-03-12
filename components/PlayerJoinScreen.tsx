@@ -79,7 +79,7 @@ export default function PlayerJoinScreen({
       <h1 className="text-3xl font-bold text-center mb-2">
         Join Room {roomCode}
       </h1>
-      <p className="text-center text-white/50 mb-8">Choose your persona</p>
+      <p className="text-center text-white/50 mb-8">Choose your avatar</p>
 
       <div className="grid grid-cols-3 gap-4 mb-8">
         {avatars.map((avatar) => (

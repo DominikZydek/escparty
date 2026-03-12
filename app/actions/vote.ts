@@ -77,3 +77,17 @@ export async function submitVotes(playerId: string, votes: VoteItem[]) {
 
   return { success: true };
 }
+
+export async function withdrawVotes(playerId: string, roomCode: string) {
+  await prisma.vote.deleteMany({
+    where: {
+      playerId: playerId,
+    },
+  });
+
+  await pusherServer.trigger(`room-${roomCode}`, "vote-withdrawn", {
+    playerId,
+  });
+
+  return { success: true };
+}
