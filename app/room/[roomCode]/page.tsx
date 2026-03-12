@@ -121,6 +121,7 @@ export default async function RoomPage({ params }: PageProps) {
       const roomData = await prisma.gameRoom.findUnique({
         where: { code: roomCode },
         include: {
+          contest: true,
           players: {
             include: {
               avatar: true,
@@ -140,6 +141,7 @@ export default async function RoomPage({ params }: PageProps) {
 
       return (
         <ResultsScreen
+          contest={roomData.contest}
           roomCode={roomCode}
           isHost={isHost}
           currentPlayerId={playerId}

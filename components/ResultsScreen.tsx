@@ -4,7 +4,7 @@ import { getCountryCode } from "@/lib/countries";
 import React, { useState, useEffect, useMemo, useRef } from "react";
 import Pusher from "pusher-js";
 import clsx from "clsx";
-import { Player, Vote, Entry as PrismaEntry } from "@prisma/client";
+import { Player, Vote, Entry as PrismaEntry, Contest } from "@prisma/client";
 import Button from "@/components/Button";
 import { setNextVoter, revealTwelve, finishGame } from "@/app/actions/room";
 import { pauseBackgroundMusic } from "@/lib/audio";
@@ -17,6 +17,7 @@ type PlayerWithVotes = Player & {
 };
 
 interface ResultsScreenProps {
+  contest: Contest
   roomCode: string;
   isHost: boolean;
   currentPlayerId: string | undefined;
@@ -28,6 +29,7 @@ interface ResultsScreenProps {
 const AVAILABLE_EMOJIS = ["flag", "❤️", "🔥", "👏", "🤯", "💩"];
 
 export default function ResultsScreen({
+  contest,
   roomCode,
   isHost,
   currentPlayerId,
@@ -470,7 +472,7 @@ export default function ResultsScreen({
         className="text-3xl lg:text-4xl font-bold text-center mb-4 shrink-0"
         style={{ textShadow: "0px 4px 10px rgba(0,0,0,0.5)" }}
       >
-        {showWinner && videoEnded ? "Final Scoreboard" : "Grand Final Results"}
+        {contest.name}
       </h1>
 
       {!showWinner && (

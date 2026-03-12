@@ -9,7 +9,7 @@ import { createCustomContest } from "@/app/actions/contest";
 import { createRoom } from "@/app/actions/room";
 import { useRouter } from "next/navigation";
 import Papa from "papaparse";
-import { Upload, GripVertical } from "lucide-react";
+import { Upload, GripVertical, Pencil } from "lucide-react";
 import {
   DragDropContext,
   Droppable,
@@ -132,12 +132,26 @@ export default function CustomContestSetup({
 
   return (
     <div className="h-full w-full max-w-4xl flex flex-col gap-6 mx-auto">
-      <div className="shrink-0 flex justify-between items-center text-white mb-4">
-        <h2 className="text-2xl font-bold drop-shadow-md">
-          Add Participants & Set Order
-        </h2>
+      <div className="shrink-0 flex justify-between items-center text-white mb-4 gap-6">
+        
+        {/* Kontener pola tekstowego - ZMIANA: flex-1 zamiast max-w-sm */}
+        <div className="relative flex items-center flex-1 group">
+          <input
+            type="text"
+            value={contestName}
+            onChange={(e) => setContestName(e.target.value)}
+            placeholder="Name your contest..."
+            disabled={isCreating}
+            className="text-2xl font-bold bg-white/10 border border-white/20 hover:border-white/40 hover:bg-white/15 focus:border-pink-500 focus:bg-black/50 rounded-xl outline-none transition-all w-full py-2 pl-4 pr-12 shadow-inner placeholder:text-white/30 disabled:opacity-50 truncate"
+          />
+          <Pencil 
+            size={20} 
+            className="absolute right-4 text-white/30 group-hover:text-white/70 pointer-events-none transition-colors" 
+          />
+        </div>
 
-        <div className="flex items-center gap-4">
+        {/* Prawy panel z przyciskami - ZMIANA: dodano shrink-0 */}
+        <div className="flex items-center gap-4 shrink-0">
           <input
             type="file"
             accept=".csv"
@@ -153,7 +167,7 @@ export default function CustomContestSetup({
             <Upload size={16} />
             Import CSV
           </button>
-          <span className="text-white/50 text-sm font-mono">
+          <span className="text-white/50 text-sm font-mono bg-black/30 px-3 py-1.5 rounded-lg border border-white/5">
             {entries.length} entries
           </span>
         </div>
