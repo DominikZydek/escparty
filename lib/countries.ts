@@ -121,7 +121,7 @@ export const COUNTRIES = [
   },
   {
     name: "Holy See",
-    altNames: ["Watykan", "Vatikanstadt", "Saint-Siège", "Santa Sede"],
+    altNames: ["Vatican", "Watykan", "Vatikanstadt", "Saint-Siège", "Santa Sede"],
     countryCode: "va",
     flagColors: ["#ffe000", "#ffffff"],
   },
@@ -979,7 +979,7 @@ export const COUNTRIES = [
   },
   {
     name: "Türkiye",
-    altNames: ["Turcja", "Türkei", "Turquie", "Turquía"],
+    altNames: ["Turkey", "Turcja", "Türkei", "Turquie", "Turquía"],
     countryCode: "tr",
     flagColors: ["#e30a17", "#ffffff"],
   },
