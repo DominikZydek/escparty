@@ -4,23 +4,34 @@ import * as cheerio from "cheerio";
 
 async function fetchFromLastFm(artistQuery: string): Promise<string[]> {
   try {
-    const formattedArtist = encodeURIComponent(artistQuery.trim()).replace(
-      /%20/g,
-      "+",
-    );
+    const formattedArtist = encodeURIComponent(artistQuery.trim()).replace(/%20/g, "+");
     const url = `https://www.last.fm/music/${formattedArtist}/+images`;
+
+    console.log(`[DEBUG] 🚀 Start pobierania dla: ${artistQuery} | URL: ${url}`);
 
     const response = await fetch(url, {
       headers: {
-        "User-Agent":
-          "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
       },
-      cache: 'no-store'
+      // cache: "no-store" - polecam zostawić to na czas testów!
+      cache: "no-store",
     });
 
-    if (!response.ok) return [];
+    console.log(`[DEBUG] 📡 Otrzymano status: ${response.status} ${response.statusText} dla ${artistQuery}`);
+
+    if (!response.ok) {
+      console.error(`[DEBUG] ❌ Błąd HTTP od Last.fm! Kod: ${response.status}`);
+      return [];
+    }
 
     const html = await response.text();
+    console.log(`[DEBUG] 📄 Pobrany HTML ma długość: ${html.length} znaków.`);
+
+    // Jeśli HTML jest podejrzanie krótki, wypluwamy jego początek, żeby zobaczyć czy to nie CAPTCHA
+    if (html.length < 50000) {
+      console.log(`[DEBUG] ⚠️ Podejrzanie krótki HTML! Fragment:`, html.substring(0, 200));
+    }
+
     const $ = cheerio.load(html);
     const imageUrls: string[] = [];
 
@@ -33,9 +44,11 @@ async function fetchFromLastFm(artistQuery: string): Promise<string[]> {
       }
     });
 
+    console.log(`[DEBUG] ✅ Znaleziono zdjęć dla ${artistQuery}: ${imageUrls.length}`);
     return imageUrls;
+
   } catch (error) {
-    console.error(`Last.fm error dla ${artistQuery}:`, error);
+    console.error(`[DEBUG] 💥 Poważny błąd (catch) dla ${artistQuery}:`, error);
     return [];
   }
 }
