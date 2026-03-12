@@ -28,7 +28,14 @@ export default function CustomContestSetup({
 
   const [contestName, setContestName] = useState("Custom contest");
   const [entries, setEntries] = useState([
-    { id: uuidv4(), country: "", artist: "", songTitle: "", videoUrl: "" },
+    {
+      id: uuidv4(),
+      country: "",
+      artist: "",
+      songTitle: "",
+      videoUrl: "",
+      isHidden: false,
+    },
   ]);
 
   const [isCreating, setIsCreating] = useState(false);
@@ -40,7 +47,7 @@ export default function CustomContestSetup({
     setIsMounted(true);
   }, []);
 
-  const handleUpdate = (id: string, field: string, value: string) => {
+  const handleUpdate = (id: string, field: string, value: any) => {
     setEntries((prev) =>
       prev.map((item) => (item.id === id ? { ...item, [field]: value } : item)),
     );
@@ -49,7 +56,14 @@ export default function CustomContestSetup({
   const handleAddRow = () => {
     setEntries((prev) => [
       ...prev,
-      { id: uuidv4(), country: "", artist: "", songTitle: "", videoUrl: "" },
+      {
+        id: uuidv4(),
+        country: "",
+        artist: "",
+        songTitle: "",
+        videoUrl: "",
+        isHidden: false,
+      },
     ]);
   };
 
@@ -68,10 +82,13 @@ export default function CustomContestSetup({
     setEntries(items);
   };
 
-  // CSV IMPORT
   const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (!file) return;
+
+    const hideData = window.confirm(
+      "Do you want to hide the imported entries from viewers?",
+    );
 
     Papa.parse(file, {
       header: true,
@@ -91,12 +108,12 @@ export default function CustomContestSetup({
             artist: getVal(["artist"]),
             songTitle: getVal(["song", "title"]),
             videoUrl: getVal(["youtube", "link", "video", "url"]),
+            isHidden: hideData, // Zastosowanie wyboru hosta
           };
         });
 
         if (importedEntries.length > 0) {
           setEntries(importedEntries);
-          alert(`Successfully imported ${importedEntries.length} entries!`);
         } else {
           alert("No valid data found in the CSV file.");
         }
@@ -133,8 +150,6 @@ export default function CustomContestSetup({
   return (
     <div className="h-full w-full max-w-4xl flex flex-col gap-6 mx-auto">
       <div className="shrink-0 flex justify-between items-center text-white mb-4 gap-6">
-        
-        {/* Kontener pola tekstowego - ZMIANA: flex-1 zamiast max-w-sm */}
         <div className="relative flex items-center flex-1 group">
           <input
             type="text"
@@ -144,13 +159,12 @@ export default function CustomContestSetup({
             disabled={isCreating}
             className="text-2xl font-bold bg-white/10 border border-white/20 hover:border-white/40 hover:bg-white/15 focus:border-pink-500 focus:bg-black/50 rounded-xl outline-none transition-all w-full py-2 pl-4 pr-12 shadow-inner placeholder:text-white/30 disabled:opacity-50 truncate"
           />
-          <Pencil 
-            size={20} 
-            className="absolute right-4 text-white/30 group-hover:text-white/70 pointer-events-none transition-colors" 
+          <Pencil
+            size={20}
+            className="absolute right-4 text-white/30 group-hover:text-white/70 pointer-events-none transition-colors"
           />
         </div>
 
-        {/* Prawy panel z przyciskami - ZMIANA: dodano shrink-0 */}
         <div className="flex items-center gap-4 shrink-0">
           <input
             type="file"
