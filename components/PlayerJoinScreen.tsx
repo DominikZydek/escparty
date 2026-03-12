@@ -32,12 +32,23 @@ export default function PlayerJoinScreen({
 
     const channel = pusher.subscribe(`room-${roomCode}`);
 
+    channel.bind("room-updated", (data: { status: string }) => {
+      if (data.status === "RUNNING_ORDER" || data.status === "WATCHING") {
+        router.refresh();
+      }
+    });
+
     channel.bind("show-started", (data: { redirectUrl: string }) => {
-      window.location.href = data.redirectUrl;
+      if (data && data.redirectUrl) {
+        window.location.href = data.redirectUrl;
+      } else {
+        router.refresh();
+      }
     });
 
     return () => {
       pusher.unsubscribe(`room-${roomCode}`);
+      pusher.disconnect();
     };
   }, [hasJoined, roomCode, router]);
 
@@ -62,7 +73,7 @@ export default function PlayerJoinScreen({
           <img
             src={avatars.find((a) => a.id === selectedAvatarId)?.url}
             alt="My Avatar"
-            className="w-32 h-32 rounded-full border-4 border-white shadow-[0_0_30px_rgba(255,255,255,0.3)]"
+            className="w-32 h-32 rounded-full border-4 border-white shadow-[0_0_30px_rgba(255,255,255,0.3)] object-cover"
           />
         </div>
         <h1 className="text-3xl font-bold">You are in!</h1>

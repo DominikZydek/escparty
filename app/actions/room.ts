@@ -78,6 +78,17 @@ export async function startGame(roomCode: string) {
   });
 }
 
+export async function startRunningOrderDraw(roomCode: string) {
+  await prisma.gameRoom.update({
+    where: { code: roomCode },
+    data: { status: "RUNNING_ORDER" },
+  });
+
+  await pusherServer.trigger(`room-${roomCode}`, "room-updated", {
+    status: "RUNNING_ORDER",
+  });
+}
+
 export async function endVoting(roomCode: string) {
   await prisma.gameRoom.update({
     where: { code: roomCode },
@@ -149,4 +160,28 @@ export async function finishGame(roomCode: string) {
     console.error("Failed to finish game:", error);
     return { error: "Failed to finish game" };
   }
+}
+
+export async function saveRunningOrderAndStart(
+  roomCode: string,
+  orderedEntryIds: string[],
+) {
+  const updatePromises = orderedEntryIds.map((id, index) =>
+    prisma.entry.update({
+      where: { id },
+      data: { order: index + 1 },
+    }),
+  );
+  await Promise.all(updatePromises);
+
+  await prisma.gameRoom.update({
+    where: { code: roomCode },
+    data: { status: "WATCHING" },
+  });
+
+  await pusherServer.trigger(`room-${roomCode}`, "room-updated", {
+    status: "WATCHING",
+  });
+
+  return { success: true };
 }

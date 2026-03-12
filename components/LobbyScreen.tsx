@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import Pusher from "pusher-js";
 import Button from "@/components/Button";
 import { Player, Avatar } from "@prisma/client";
-import { startShow } from "@/app/actions/room";
+import { startRunningOrderDraw } from "@/app/actions/room"; // <-- ZMIENIONY IMPORT
 import { useRouter } from "next/navigation";
 import QRCode from "react-qr-code";
 
@@ -26,7 +26,6 @@ export default function LobbyScreen({
   const router = useRouter();
 
   useEffect(() => {
-    // Generujemy URL dopiero po stronie klienta
     setJoinUrl(`${window.location.origin}/room/${roomCode}?mode=player`);
 
     const pusher = new Pusher(process.env.NEXT_PUBLIC_PUSHER_KEY!, {
@@ -44,8 +43,10 @@ export default function LobbyScreen({
       });
     });
 
-    channel.bind("show-started", (data: { redirectUrl: string }) => {
-      router.refresh();
+    channel.bind("room-updated", (data: { status: string }) => {
+      if (data.status === "RUNNING_ORDER") {
+        router.refresh();
+      }
     });
 
     return () => {
@@ -59,7 +60,7 @@ export default function LobbyScreen({
     setIsStarting(true);
 
     try {
-      await startShow(roomCode);
+      await startRunningOrderDraw(roomCode);
     } catch (error) {
       console.error("Failed to start", error);
       setIsStarting(false);
@@ -131,7 +132,7 @@ export default function LobbyScreen({
             onClick={handleStartGame}
             className="w-full py-4 text-lg"
           >
-            {isStarting ? "Starting..." : "Start Show"}
+            {isStarting ? "Starting..." : "Draw Running Order"}
           </Button>
         </div>
       </div>

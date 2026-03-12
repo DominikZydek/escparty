@@ -10,6 +10,8 @@ import ResultsScreen from "@/components/ResultsScreen";
 import { getAvatars } from "@/app/actions/player";
 import PlayerWatchingScreen from "@/components/PlayerWatchingScreen";
 import HostWatchingScreen from "@/components/HostWatchingScreen";
+import HostRunningOrderScreen from "@/components/HostRunningOrderScreen";
+import PlayerDrawWaitingScreen from "@/components/PlayerDrawWaitingScreen";
 
 interface PageProps {
   params: Promise<{ roomCode: string }>;
@@ -44,17 +46,33 @@ export default async function RoomPage({ params }: PageProps) {
       const avatars = await getAvatars();
       return <PlayerJoinScreen roomCode={roomCode} avatars={avatars} />;
 
-    case 'WATCHING':
+    case "RUNNING_ORDER":
+      if (isHost) {
+        const entriesToDraw = await prisma.entry.findMany({
+          where: { contestId: room.contestId },
+        });
+
+        return (
+          <HostRunningOrderScreen roomCode={roomCode} entries={entriesToDraw} />
+        );
+      }
+
+      if (playerId) {
+        return <PlayerDrawWaitingScreen roomCode={roomCode} />;
+      }
+
+      return redirect(`/join-room?code=${roomCode}`);
+    case "WATCHING":
       const contestEntries = await prisma.entry.findMany({
         where: { contestId: room.contestId },
-        orderBy: { order: 'asc' }
+        orderBy: { order: "asc" },
       });
 
       if (isHost) {
         return (
-          <HostWatchingScreen 
-            roomCode={roomCode} 
-            entries={contestEntries} 
+          <HostWatchingScreen
+            roomCode={roomCode}
+            entries={contestEntries}
             initialEntryId={room.currentEntryId}
           />
         );
@@ -62,14 +80,14 @@ export default async function RoomPage({ params }: PageProps) {
 
       if (playerId) {
         return (
-          <PlayerWatchingScreen 
-            roomCode={roomCode} 
-            entries={contestEntries} 
+          <PlayerWatchingScreen
+            roomCode={roomCode}
+            entries={contestEntries}
             initialEntryId={room.currentEntryId}
           />
         );
       }
-      
+
       return redirect(`/join-room?code=${roomCode}`);
 
     case "VOTING":
@@ -82,7 +100,7 @@ export default async function RoomPage({ params }: PageProps) {
         });
         const contestEntriesForHost = await prisma.entry.findMany({
           where: { contestId: room.contestId },
-          orderBy: { order: "asc" }
+          orderBy: { order: "asc" },
         });
 
         return (
