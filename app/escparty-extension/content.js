@@ -1,17 +1,22 @@
 window.addEventListener("message", (event) => {
-  if (event.source !== window || !event.data || event.data.type !== "FETCH_LASTFM_IMAGES") {
+  if (event.source !== window || !event.data) return;
+
+  if (event.data.type === "CHECK_EXTENSION_PING") {
+    window.postMessage({ type: "CHECK_EXTENSION_PONG" }, "*");
     return;
   }
 
-  chrome.runtime.sendMessage(
-    { action: "fetchImages", artist: event.data.artist },
-    (response) => {
-      window.postMessage({
-        type: "FETCH_LASTFM_IMAGES_RESULT",
-        artist: event.data.artist,
-        images: response.images,
-        success: response.success
-      }, "*");
-    }
-  );
+  if (event.data.type === "FETCH_LASTFM_IMAGES") {
+    chrome.runtime.sendMessage(
+      { action: "fetchImages", artist: event.data.artist },
+      (response) => {
+        window.postMessage({
+          type: "FETCH_LASTFM_IMAGES_RESULT",
+          artist: event.data.artist,
+          images: response.images,
+          success: response.success
+        }, "*");
+      }
+    );
+  }
 });

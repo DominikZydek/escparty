@@ -83,7 +83,7 @@ async function processArtistImages(artist: string): Promise<string[]> {
 
     if (individualArtists.length > 1) {
       const results = await Promise.all(
-        individualArtists.map((a) => fetchImagesViaExtension(a))
+        individualArtists.map((a) => fetchImagesViaExtension(a)),
       );
       const combinedImages = interleaveArrays(results);
 
@@ -100,7 +100,9 @@ async function processArtistImages(artist: string): Promise<string[]> {
 }
 // -----------------------------------------------------------
 
-export default function CustomContestSetup({ onBack }: CustomContestSetupProps) {
+export default function CustomContestSetup({
+  onBack,
+}: CustomContestSetupProps) {
   const router = useRouter();
 
   const [contestName, setContestName] = useState("Custom contest");
@@ -118,12 +120,42 @@ export default function CustomContestSetup({ onBack }: CustomContestSetupProps) 
   const [isCreating, setIsCreating] = useState(false);
   const [isMounted, setIsMounted] = useState(false);
   const [loadingText, setLoadingText] = useState("Creating Lobby...");
+  const [hasExtension, setHasExtension] = useState<boolean | null>(null);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     setIsMounted(true);
   }, []);
+
+  useEffect(() => {
+    const checkExtension = () => {
+      const handlePong = (event: MessageEvent) => {
+        if (
+          event.source === window &&
+          event.data?.type === "CHECK_EXTENSION_PONG"
+        ) {
+          setHasExtension(true);
+          window.removeEventListener("message", handlePong);
+        }
+      };
+
+      window.addEventListener("message", handlePong);
+
+      // PING extension
+      window.postMessage({ type: "CHECK_EXTENSION_PING" }, "*");
+
+      // no PONG, no extension
+      setTimeout(() => {
+        setHasExtension((prev) => (prev === null ? false : prev));
+        window.removeEventListener("message", handlePong);
+      }, 1000);
+    };
+
+    if (isMounted) {
+      checkExtension();
+    }
+  }, [isMounted]);
 
   const handleUpdate = (id: string, field: string, value: any) => {
     setEntries((prev) =>
@@ -224,7 +256,7 @@ export default function CustomContestSetup({ onBack }: CustomContestSetupProps) 
             videoUrl: entry.videoUrl,
             imageUrls: fetchedImages,
           };
-        })
+        }),
       );
 
       setLoadingText("Saving contest...");
@@ -243,6 +275,23 @@ export default function CustomContestSetup({ onBack }: CustomContestSetupProps) 
 
   return (
     <div className="h-full w-full max-w-4xl flex flex-col gap-6 mx-auto">
+      {hasExtension === false && (
+        <div className="shrink-0 bg-red-500/20 border border-red-500/50 rounded-xl p-5 flex flex-col items-center justify-center text-center gap-3">
+          <p className="text-white text-lg">
+            <strong>Extension needed!</strong> To get automatically generated
+            postcards, please visit:
+          </p>
+          <a
+            href="https://chromewebstore.google.com/detail/PLACEHOLDER"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="bg-red-600 hover:bg-red-500 text-white font-bold py-2 px-6 rounded-lg transition-colors shadow-lg"
+          >
+            Download Extension
+          </a>
+        </div>
+      )}
+
       <div className="shrink-0 flex justify-between items-center text-white mb-4 gap-6">
         <div className="relative flex items-center flex-1 group">
           <input
