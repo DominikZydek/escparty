@@ -1,0 +1,24 @@
+{
+  "manifest_version": 3,
+  "name": "escparty extension",
+  "version": "1.0",
+  "description": "Allows host to pull postcard pics locally",
+  "permissions": [],
+  "host_permissions": [
+    "https://www.last.fm/*",
+    "http://localhost:*/*",
+    "https://*.vercel.app/*"
+  ],
+  "background": {
+    "service_worker": "background.js"
+  },
+  "content_scripts": [
+    {
+      "matches": [
+        "http://localhost:*/*",
+        "https://*.vercel.app/*"
+      ],
+      "js": ["content.js"]
+    }
+  ]
+}

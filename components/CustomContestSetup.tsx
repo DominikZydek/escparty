@@ -21,9 +21,86 @@ interface CustomContestSetupProps {
   onBack: () => void;
 }
 
-export default function CustomContestSetup({
-  onBack,
-}: CustomContestSetupProps) {
+// img helper functions
+function interleaveArrays(arrays: string[][]): string[] {
+  const result: string[] = [];
+  const maxLength = Math.max(...arrays.map((arr) => arr.length));
+  for (let i = 0; i < maxLength; i++) {
+    for (const arr of arrays) {
+      if (arr[i]) result.push(arr[i]);
+    }
+  }
+  return result;
+}
+
+function fillToTarget(images: string[], target: number): string[] {
+  if (images.length === 0) return [];
+  const result: string[] = [];
+  while (result.length < target) {
+    result.push(...images);
+  }
+  return result.slice(0, target);
+}
+
+// extension
+const fetchImagesViaExtension = (artist: string): Promise<string[]> => {
+  return new Promise((resolve) => {
+    const handleMessage = (event: MessageEvent) => {
+      if (
+        event.source === window &&
+        event.data?.type === "FETCH_LASTFM_IMAGES_RESULT" &&
+        event.data?.artist === artist
+      ) {
+        window.removeEventListener("message", handleMessage);
+        resolve(event.data.images || []);
+      }
+    };
+
+    window.addEventListener("message", handleMessage);
+    window.postMessage({ type: "FETCH_LASTFM_IMAGES", artist }, "*");
+
+    setTimeout(() => {
+      window.removeEventListener("message", handleMessage);
+      resolve([]);
+    }, 4000);
+  });
+};
+
+async function processArtistImages(artist: string): Promise<string[]> {
+  const TARGET_COUNT = 15;
+  let images = await fetchImagesViaExtension(artist);
+
+  if (images.length >= 3) {
+    return fillToTarget(images, TARGET_COUNT);
+  }
+
+  const splitRegex = /\s+(?:ft\.|feat\.|feat|&|x|,|and)\s+/i;
+  if (splitRegex.test(artist)) {
+    const individualArtists = artist
+      .split(splitRegex)
+      .map((a) => a.trim())
+      .filter(Boolean);
+
+    if (individualArtists.length > 1) {
+      const results = await Promise.all(
+        individualArtists.map((a) => fetchImagesViaExtension(a))
+      );
+      const combinedImages = interleaveArrays(results);
+
+      if (combinedImages.length > 0) {
+        return fillToTarget(combinedImages, TARGET_COUNT);
+      }
+    }
+  }
+
+  if (images.length === 0) {
+    return Array(TARGET_COUNT).fill("/fallback-postcard.png");
+  }
+  return fillToTarget(images, TARGET_COUNT);
+}
+// -----------------------------------------------------------
+
+export default function CustomContestSetup({ onBack }: CustomContestSetupProps) {
   const router = useRouter();
 
   const [contestName, setContestName] = useState("Custom contest");
@@ -40,6 +117,7 @@ export default function CustomContestSetup({
 
   const [isCreating, setIsCreating] = useState(false);
   const [isMounted, setIsMounted] = useState(false);
+  const [loadingText, setLoadingText] = useState("Creating Lobby...");
 
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -74,11 +152,9 @@ export default function CustomContestSetup({
 
   const handleDragEnd = (result: DropResult) => {
     if (!result.destination) return;
-
     const items = Array.from(entries);
     const [reorderedItem] = items.splice(result.source.index, 1);
     items.splice(result.destination.index, 0, reorderedItem);
-
     setEntries(items);
   };
 
@@ -108,7 +184,7 @@ export default function CustomContestSetup({
             artist: getVal(["artist"]),
             songTitle: getVal(["song", "title"]),
             videoUrl: getVal(["youtube", "link", "video", "url"]),
-            isHidden: hideData, // Zastosowanie wyboru hosta
+            isHidden: hideData,
           };
         });
 
@@ -133,9 +209,27 @@ export default function CustomContestSetup({
     if (!contestName.trim()) return alert("Enter contest name");
 
     setIsCreating(true);
+    setLoadingText("Fetching images via extension...");
 
     try {
-      const contest = await createCustomContest(contestName, entries);
+      // use extension to get pics
+      const entriesWithImages = await Promise.all(
+        entries.map(async (entry) => {
+          const fetchedImages = await processArtistImages(entry.artist);
+          return {
+            id: entry.id,
+            country: entry.country,
+            artist: entry.artist,
+            songTitle: entry.songTitle,
+            videoUrl: entry.videoUrl,
+            imageUrls: fetchedImages,
+          };
+        })
+      );
+
+      setLoadingText("Saving contest...");
+
+      const contest = await createCustomContest(contestName, entriesWithImages);
       const room = await createRoom(contest.id);
       router.push(`/room/${room.code}?mode=host`);
     } catch (error) {
@@ -247,7 +341,7 @@ export default function CustomContestSetup({
             Cancel
           </Button>
           <Button onClick={handleCreateGame} disabled={isCreating}>
-            {isCreating ? "Creating Lobby..." : "Create & Start Game"}
+            {isCreating ? loadingText : "Create & Start Game"}
           </Button>
         </div>
       </div>

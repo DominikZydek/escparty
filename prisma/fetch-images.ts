@@ -1,5 +1,5 @@
 import { PrismaClient } from "@prisma/client";
-import { fetchArtistImages } from "@/app/actions/image";
+import { fetchArtistImages } from "@/lib/scraper";
 import { PrismaPg } from '@prisma/adapter-pg';
 import { Pool } from 'pg';
 
