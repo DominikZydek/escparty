@@ -28,6 +28,7 @@ export default async function RoomPage({ params }: PageProps) {
     where: { code: roomCode },
     include: {
       players: { include: { avatar: true } },
+      contest: true
     },
   });
 
@@ -74,6 +75,7 @@ export default async function RoomPage({ params }: PageProps) {
             roomCode={roomCode}
             entries={contestEntries}
             initialEntryId={room.currentEntryId}
+            contestName={room.contest.name}
           />
         );
       }

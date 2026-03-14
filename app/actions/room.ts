@@ -128,6 +128,12 @@ export async function startShow(roomCode: string) {
 }
 
 export async function playEntry(roomCode: string, entryId: string | null) {
+  if (entryId === "flag-parade") {
+    await pusherServer.trigger(`room-${roomCode}`, "video-changed", {
+      entryId,
+    });
+    return;
+  }
   await prisma.gameRoom.update({
     where: { code: roomCode },
     data: { currentEntryId: entryId },
