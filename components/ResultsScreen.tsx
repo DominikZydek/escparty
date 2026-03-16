@@ -203,6 +203,8 @@ export default function ResultsScreen({
 
   // AUDIO
   useEffect(() => {
+    if (!isHost) return;
+
     if (revealedIndex >= 0 && currentVoterIndex >= 0 && !showWinner) {
       const currentPoints = EUROVISION_POINTS[revealedIndex];
       const activePlayer = sortedPlayers[currentVoterIndex];
@@ -218,7 +220,14 @@ export default function ResultsScreen({
         }
       }
     }
-  }, [revealedIndex, currentVoterIndex, sortedPlayers, entries, showWinner]);
+  }, [
+    revealedIndex,
+    currentVoterIndex,
+    sortedPlayers,
+    entries,
+    showWinner,
+    isHost,
+  ]);
 
   useEffect(() => {
     if (!showWinner || videoEnded || isHost) return;
