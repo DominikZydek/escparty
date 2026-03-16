@@ -3,11 +3,18 @@
 import { getCountryCode } from "@/lib/countries";
 import React, { useState, useEffect, useMemo, useRef } from "react";
 import Pusher from "pusher-js";
-import clsx from "clsx";
 import { Player, Vote, Entry as PrismaEntry, Contest } from "@prisma/client";
 import Button from "@/components/Button";
-import { setNextVoter, revealTwelve, finishGame } from "@/app/actions/room";
+import {
+  setNextVoter,
+  revealNextPoint,
+  revealAllPoints,
+  finishGame,
+} from "@/app/actions/room";
 import { pauseBackgroundMusic } from "@/lib/audio";
+
+import { EmojiCanvas } from "./results/EmojiCanvas";
+import { ScoreboardGrid, CalculatedEntry } from "./results/ScoreboardGrid";
 
 type Entry = PrismaEntry & { songTitle?: string; title?: string };
 type VoteWithEntry = Vote & { entry: Entry };
@@ -17,7 +24,7 @@ type PlayerWithVotes = Player & {
 };
 
 interface ResultsScreenProps {
-  contest: Contest
+  contest: Contest;
   roomCode: string;
   isHost: boolean;
   currentPlayerId: string | undefined;
@@ -27,6 +34,8 @@ interface ResultsScreenProps {
 }
 
 const AVAILABLE_EMOJIS = ["flag", "❤️", "🔥", "👏", "🤯", "💩"];
+
+const EUROVISION_POINTS = [1, 2, 3, 4, 5, 6, 7, 8, 10, 12];
 
 export default function ResultsScreen({
   contest,
@@ -42,16 +51,10 @@ export default function ResultsScreen({
   const [currentVoterId, setCurrentVoterId] = useState<string | null>(
     initialCurrentVoterId,
   );
-  const [twelveRevealed, setTwelveRevealed] = useState(false);
+
+  const [revealedIndex, setRevealedIndex] = useState<number>(-1);
 
   const privateChannelRef = useRef<any>(null);
-  const canvasRef = useRef<HTMLCanvasElement>(null);
-  const particlesRef = useRef<any[]>([]);
-  const isAnimatingRef = useRef<boolean>(false);
-  const animationFrameRef = useRef<number>(0);
-  const isActiveRef = useRef<boolean>(true);
-  const lastEmojiTimeRef = useRef<Record<string, number>>({});
-  const flagImgRef = useRef<HTMLImageElement | null>(null);
 
   const winner = useMemo(() => {
     if (!entries || entries.length === 0) return null;
@@ -70,28 +73,44 @@ export default function ResultsScreen({
       .sort((a, b) => b.points - a.points)[0];
   }, [entries, players]);
 
-  useEffect(() => {
-    if (winner) {
-      const img = new Image();
-      const code = getCountryCode(winner.country).toLowerCase();
-      // Pobieramy obrazek z tego samego źródła, którego używa Twój <span>
-      img.src = `https://cdn.jsdelivr.net/gh/lipis/flag-icons@7.0.0/flags/4x3/${code}.svg`;
-      img.onload = () => {
-        flagImgRef.current = img;
-      };
-    }
-  }, [winner]);
+  const sortedPlayers = useMemo(() => {
+    if (!entries || entries.length === 0 || !players || players.length === 0)
+      return [];
 
-  const sortedPlayers = useMemo(
-    () => [...players].sort((a, b) => a.name.localeCompare(b.name)),
-    [players],
-  );
+    const finalScores: Record<string, number> = {};
+    entries.forEach((e) => (finalScores[e.id] = 0));
+
+    players.forEach((player) => {
+      player.votes.forEach((vote) => {
+        if (finalScores[vote.entryId] !== undefined) {
+          finalScores[vote.entryId] += vote.points;
+        }
+      });
+    });
+
+    const ultimateWinnerId = Object.entries(finalScores).sort(
+      (a, b) => b[1] - a[1],
+    )[0]?.[0];
+
+    return [...players].sort((a, b) => {
+      const pointsGivenToWinnerA =
+        a.votes.find((v) => v.entryId === ultimateWinnerId)?.points || 0;
+      const pointsGivenToWinnerB =
+        b.votes.find((v) => v.entryId === ultimateWinnerId)?.points || 0;
+
+      if (pointsGivenToWinnerA !== pointsGivenToWinnerB) {
+        return pointsGivenToWinnerA - pointsGivenToWinnerB;
+      }
+      return a.name.localeCompare(b.name);
+    });
+  }, [players, entries]);
+
   const currentVoterIndex = useMemo(() => {
     if (!currentVoterId) return -1;
     return sortedPlayers.findIndex((p) => p.id === currentVoterId);
   }, [sortedPlayers, currentVoterId]);
 
-  const calculatedEntries = useMemo(() => {
+  const calculatedEntries: CalculatedEntry[] = useMemo(() => {
     if (showWinner && !videoEnded) return [];
 
     const scores: Record<
@@ -120,13 +139,12 @@ export default function ResultsScreen({
           });
         } else if (index === currentVoterIndex) {
           player.votes.forEach((v) => {
-            if (v.points < 12) {
+            const pointIdx = EUROVISION_POINTS.indexOf(v.points);
+            if (pointIdx !== -1 && pointIdx <= revealedIndex) {
               scores[v.entryId].total += v.points;
-              scores[v.entryId].currentPointsToAdd = v.points;
-            }
-            if (v.points === 12 && twelveRevealed) {
-              scores[v.entryId].total += v.points;
-              scores[v.entryId].currentPointsToAdd = 12;
+              if (pointIdx === revealedIndex) {
+                scores[v.entryId].currentPointsToAdd = v.points;
+              }
             }
           });
         }
@@ -145,7 +163,7 @@ export default function ResultsScreen({
     sortedPlayers,
     currentVoterId,
     currentVoterIndex,
-    twelveRevealed,
+    revealedIndex,
     showWinner,
     videoEnded,
   ]);
@@ -159,11 +177,19 @@ export default function ResultsScreen({
     publicChannel.bind(
       "voter-changed",
       (data: { currentVoterId: string | null }) => {
-        setTwelveRevealed(false);
+        setRevealedIndex(-1);
         setCurrentVoterId(data.currentVoterId);
       },
     );
-    publicChannel.bind("twelve-revealed", () => setTwelveRevealed(true));
+
+    publicChannel.bind("point-revealed", (data: { newIndex: number }) => {
+      setRevealedIndex(data.newIndex);
+    });
+
+    publicChannel.bind("all-points-revealed", () => {
+      setRevealedIndex(EUROVISION_POINTS.length - 1);
+    });
+
     publicChannel.bind("game-finished", () => {
       setShowWinner(true);
       pauseBackgroundMusic();
@@ -175,147 +201,54 @@ export default function ResultsScreen({
     };
   }, [roomCode]);
 
+  // AUDIO
   useEffect(() => {
-    if (!showWinner || videoEnded) return;
+    if (revealedIndex >= 0 && currentVoterIndex >= 0 && !showWinner) {
+      const currentPoints = EUROVISION_POINTS[revealedIndex];
+      const activePlayer = sortedPlayers[currentVoterIndex];
+      const vote = activePlayer?.votes.find((v) => v.points === currentPoints);
 
-    isActiveRef.current = true;
+      if (vote) {
+        const targetEntry = entries.find((e) => e.id === vote.entryId);
+        if (targetEntry) {
+          const code = getCountryCode(targetEntry.country).toLowerCase();
+          const audio = new Audio(`/sounds/country_announcements/${code}.mp3`);
+          audio.volume = 0.8;
+          audio.play().catch((e) => console.error("Audio play failed:", e));
+        }
+      }
+    }
+  }, [revealedIndex, currentVoterIndex, sortedPlayers, entries, showWinner]);
 
+  useEffect(() => {
+    if (!showWinner || videoEnded || isHost) return;
     const pusher = new Pusher(process.env.NEXT_PUBLIC_PUSHER_KEY!, {
       cluster: process.env.NEXT_PUBLIC_PUSHER_CLUSTER!,
       authEndpoint: "/api/pusher/auth",
     });
-
     const privateChannelName = `private-emojis-${roomCode}`;
-    const privateChannel = pusher.subscribe(privateChannelName);
-    privateChannelRef.current = privateChannel;
-
-    const startCanvasLoop = () => {
-      if (isAnimatingRef.current) return;
-      isAnimatingRef.current = true;
-
-      const canvas = canvasRef.current;
-      if (!canvas) {
-        isAnimatingRef.current = false;
-        return;
-      }
-      const ctx = canvas.getContext("2d");
-      if (!ctx) {
-        isAnimatingRef.current = false;
-        return;
-      }
-
-      let lastTime = performance.now();
-
-      const animate = (time: number) => {
-        if (!isActiveRef.current) return;
-
-        const dt = time - lastTime;
-        lastTime = time;
-
-        if (particlesRef.current.length === 0) {
-          ctx.clearRect(0, 0, canvas.width, canvas.height);
-          isAnimatingRef.current = false;
-          return;
-        }
-
-        ctx.clearRect(0, 0, canvas.width, canvas.height);
-        const activeParticles = [];
-
-        for (const p of particlesRef.current) {
-          p.timeAlive += dt;
-          if (p.timeAlive >= p.lifeSpan) continue;
-
-          const progress = p.timeAlive / p.lifeSpan;
-          p.x += p.vx * dt;
-          p.y += p.vy * dt;
-
-          const opacity = progress > 0.8 ? 1 - (progress - 0.8) / 0.2 : 1;
-          const scale = 1 + progress * 0.5;
-
-          ctx.save();
-          ctx.globalAlpha = opacity;
-          ctx.translate(p.x, p.y);
-          ctx.scale(scale, scale);
-
-          if (p.emoji === "WINNER_FLAG" && flagImgRef.current) {
-            ctx.drawImage(flagImgRef.current, -20, -15, 40, 30);
-          } else {
-            ctx.font = "40px Arial";
-            ctx.textAlign = "center";
-            ctx.fillText(p.emoji, 0, 0);
-          }
-
-          ctx.restore();
-          activeParticles.push(p);
-        }
-
-        particlesRef.current = activeParticles;
-        animationFrameRef.current = requestAnimationFrame(animate);
-      };
-
-      animationFrameRef.current = requestAnimationFrame(animate);
-    };
-
-    if (isHost) {
-      privateChannel.bind(
-        "client-emoji-tapped",
-        (data: { playerId: string; emoji: string }) => {
-          const now = Date.now();
-          const lastTap = lastEmojiTimeRef.current[data.playerId] || 0;
-          if (now - lastTap < 150) return;
-          lastEmojiTimeRef.current[data.playerId] = now;
-
-          const container = document.getElementById(
-            `avatar-container-${data.playerId}`,
-          );
-          const rect = container?.getBoundingClientRect();
-          const startX = rect
-            ? rect.left + rect.width / 2
-            : window.innerWidth / 2;
-          const startY = rect ? rect.top : window.innerHeight - 100;
-
-          const burstCount = Math.floor(Math.random() * 3) + 2;
-
-          for (let i = 0; i < burstCount; i++) {
-            setTimeout(() => {
-              particlesRef.current.push({
-                emoji: data.emoji,
-                x: startX + (Math.random() * 40 - 20),
-                y: startY,
-                vx: (Math.random() - 0.5) * 0.1,
-                vy: -0.3 - Math.random() * 0.2,
-                timeAlive: 0,
-                lifeSpan: 1200 + Math.random() * 600,
-              });
-              if (!isAnimatingRef.current) startCanvasLoop();
-            }, i * 100);
-          }
-        },
-      );
-    }
-
-    const handleResize = () => {
-      if (canvasRef.current) {
-        canvasRef.current.width = window.innerWidth;
-        canvasRef.current.height = window.innerHeight;
-      }
-    };
-    if (isHost) {
-      window.addEventListener("resize", handleResize);
-      handleResize();
-    }
-
+    privateChannelRef.current = pusher.subscribe(privateChannelName);
     return () => {
-      isActiveRef.current = false;
-      if (isHost) window.removeEventListener("resize", handleResize);
-      if (animationFrameRef.current)
-        cancelAnimationFrame(animationFrameRef.current);
       pusher.unsubscribe(privateChannelName);
       pusher.disconnect();
     };
-  }, [showWinner, videoEnded, roomCode, isHost]);
+  }, [showWinner, videoEnded, isHost, roomCode]);
 
-  // video
+  const isFinishedRevealing = revealedIndex >= EUROVISION_POINTS.length - 1;
+  const nextPointToReveal = !isFinishedRevealing
+    ? EUROVISION_POINTS[revealedIndex + 1]
+    : null;
+
+  const currentVoterVotes =
+    currentVoterIndex >= 0 ? sortedPlayers[currentVoterIndex].votes : [];
+  const nextVote = currentVoterVotes.find(
+    (v) => v.points === nextPointToReveal,
+  );
+  const nextTargetEntry = nextVote
+    ? entries.find((e) => e.id === nextVote.entryId)
+    : null;
+
+  // WINNER SCREEN
   if (showWinner && !videoEnded) {
     if (!isHost) {
       return (
@@ -349,7 +282,6 @@ export default function ResultsScreen({
                       if (currentPlayerId && privateChannelRef.current) {
                         if (navigator.vibrate) navigator.vibrate(50);
                         const payload = isFirst ? "WINNER_FLAG" : emoji;
-
                         privateChannelRef.current.trigger(
                           "client-emoji-tapped",
                           {
@@ -400,9 +332,11 @@ export default function ResultsScreen({
           </div>
         )}
 
-        <canvas
-          ref={canvasRef}
-          className="absolute inset-0 z-40 pointer-events-none"
+        <EmojiCanvas
+          roomCode={roomCode}
+          isHost={isHost}
+          isActive={true}
+          winnerCountry={winner?.country}
         />
 
         {winner && (
@@ -457,17 +391,9 @@ export default function ResultsScreen({
     );
   }
 
-  // scoreboard
-  const rowsPerColumn = Math.ceil(calculatedEntries.length / 2);
-
+  // SCOREBOARD
   return (
     <div className="h-screen w-full flex flex-col p-4 text-white overflow-hidden bg-black/40">
-      <style>{`
-        .results-grid { display: grid; gap: 0.5rem 2rem; height: 100%; align-content: start; }
-        @media (min-width: 768px) { .results-grid { grid-auto-flow: column; grid-template-rows: repeat(${rowsPerColumn}, minmax(0, 1fr)); } }
-        @media (max-width: 767px) { .results-grid { grid-template-columns: 1fr; grid-template-rows: auto; } }
-      `}</style>
-
       <h1
         className="text-3xl lg:text-4xl font-bold text-center mb-4 shrink-0"
         style={{ textShadow: "0px 4px 10px rgba(0,0,0,0.5)" }}
@@ -502,65 +428,11 @@ export default function ResultsScreen({
         </div>
       )}
 
-      <div
-        className={`flex-1 min-h-0 w-full max-w-7xl mx-auto ${showWinner && videoEnded ? "mb-36" : ""}`}
-      >
-        <div className="results-grid">
-          {calculatedEntries.map((entry, index) => (
-            <div
-              key={entry.id}
-              className={clsx(
-                "flex items-center px-3 py-1 rounded border relative overflow-hidden min-h-9 transition-all duration-700 ease-in-out",
-                index === 0
-                  ? "bg-linear-to-r from-yellow-600/40 to-yellow-900/40 border-yellow-500/50"
-                  : "bg-black/40 border-white/10",
-              )}
-            >
-              <div className="w-8 text-xl font-black text-white/30 text-right mr-3 font-mono">
-                {index + 1}
-              </div>
-              <div className="flex-1 z-10 flex flex-col justify-center overflow-hidden">
-                <div className="font-bold text-base md:text-lg leading-none truncate">
-                  <span
-                    className={`mr-2 fi fi-${getCountryCode(entry.country)}`}
-                  ></span>
-                  {entry.country}
-                </div>
-                <div className="text-xs opacity-60 truncate mt-0.5">
-                  {entry.artist}
-                </div>
-              </div>
-
-              <div
-                className="absolute left-0 top-0 bottom-0 bg-white/5 z-0 origin-left transition-all duration-1000 ease-out"
-                style={{
-                  width: `${calculatedEntries[0]?.points > 0 ? (entry.points / calculatedEntries[0].points) * 100 : 0}%`,
-                }}
-              />
-
-              {entry.currentPointsToAdd && (
-                <div
-                  className={clsx(
-                    "z-10 mr-4 font-black text-lg px-2 py-0.5 rounded animate-in zoom-in duration-300",
-                    entry.currentPointsToAdd === 12
-                      ? "bg-yellow-500 text-black animate-pulse"
-                      : "bg-purple-600 text-white",
-                  )}
-                >
-                  +{entry.currentPointsToAdd}
-                </div>
-              )}
-
-              <div
-                key={entry.points}
-                className="text-2xl md:text-3xl font-mono font-bold w-16 text-right z-10 shrink-0 animate-in fade-in zoom-in-90 duration-300"
-              >
-                {entry.points}
-              </div>
-            </div>
-          ))}
-        </div>
-      </div>
+      <ScoreboardGrid
+        calculatedEntries={calculatedEntries}
+        showWinner={showWinner}
+        videoEnded={videoEnded}
+      />
 
       {isHost && !showWinner && (
         <div className="shrink-0 bg-black/80 p-4 rounded-2xl border border-white/20 flex justify-between items-center z-10 w-full max-w-7xl mx-auto mt-4">
@@ -582,28 +454,40 @@ export default function ResultsScreen({
                 Start Presentation
               </Button>
             )}
+
             {currentVoterId && (
               <>
-                <button
-                  onClick={() => revealTwelve(roomCode)}
-                  className="px-4 py-2 bg-yellow-600/20 hover:bg-yellow-600 text-yellow-500 hover:text-white border border-yellow-600 rounded font-bold text-xs uppercase transition-colors"
-                  disabled={twelveRevealed}
-                >
-                  Force Reveal 12
-                </button>
-                <Button
-                  onClick={() => {
-                    const nextIndex = currentVoterIndex + 1;
-                    const isFinished = nextIndex >= sortedPlayers.length;
-                    if (isFinished) finishGame(roomCode);
-                    else setNextVoter(roomCode, sortedPlayers[nextIndex].id);
-                  }}
-                  disabled={!twelveRevealed}
-                >
-                  {currentVoterIndex + 1 >= sortedPlayers.length
-                    ? "Reveal Winner"
-                    : `Next Voter: ${sortedPlayers[currentVoterIndex + 1]?.name}`}
-                </Button>
+                {!isFinishedRevealing ? (
+                  <>
+                    <button
+                      onClick={() => revealAllPoints(roomCode)}
+                      className="px-4 py-2 bg-red-600/20 hover:bg-red-600 text-red-500 hover:text-white border border-red-600 rounded font-bold text-xs uppercase transition-colors"
+                    >
+                      Force Reveal All
+                    </button>
+                    <button
+                      onClick={() =>
+                        revealNextPoint(roomCode, revealedIndex + 1)
+                      }
+                      className="px-4 py-2 bg-yellow-600/20 hover:bg-yellow-600 text-yellow-500 hover:text-white border border-yellow-600 rounded font-bold text-xs uppercase transition-colors"
+                    >
+                      Force Reveal {nextPointToReveal} pts
+                    </button>
+                  </>
+                ) : (
+                  <Button
+                    onClick={() => {
+                      const nextIndex = currentVoterIndex + 1;
+                      if (nextIndex >= sortedPlayers.length)
+                        finishGame(roomCode);
+                      else setNextVoter(roomCode, sortedPlayers[nextIndex].id);
+                    }}
+                  >
+                    {currentVoterIndex + 1 >= sortedPlayers.length
+                      ? "Reveal Winner"
+                      : `Next Voter: ${sortedPlayers[currentVoterIndex + 1]?.name}`}
+                  </Button>
+                )}
               </>
             )}
           </div>
@@ -612,19 +496,40 @@ export default function ResultsScreen({
 
       {currentPlayerId &&
         currentPlayerId === currentVoterId &&
-        !twelveRevealed &&
+        !isFinishedRevealing &&
         !showWinner && (
           <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm animate-in fade-in">
             <div className="bg-linear-to-br from-pink-600 to-purple-700 p-1 rounded-2xl shadow-2xl animate-in zoom-in duration-300">
-              <div className="bg-black rounded-xl p-8 text-center">
-                <h2 className="text-2xl font-bold mb-6 text-white">
+              <div className="bg-black rounded-xl p-8 text-center flex flex-col items-center">
+                <h2 className="text-2xl font-bold mb-2 text-white">
                   It's your turn!
                 </h2>
+
+                {nextTargetEntry && (
+                  <div className="mb-6 bg-white/10 px-6 py-3 rounded-xl border border-white/20">
+                    <span className="text-sm text-white/70 block mb-1 uppercase tracking-widest">
+                      You are giving
+                    </span>
+                    <div className="flex items-center gap-3">
+                      <span className="text-3xl font-black text-yellow-500">
+                        {nextPointToReveal} pts
+                      </span>
+                      <span className="text-white/50">to</span>
+                      <span
+                        className={`fi fi-${getCountryCode(nextTargetEntry.country).toLowerCase()} text-2xl`}
+                      ></span>
+                      <span className="text-2xl font-bold text-white">
+                        {nextTargetEntry.country}
+                      </span>
+                    </div>
+                  </div>
+                )}
+
                 <button
-                  onClick={() => revealTwelve(roomCode)}
-                  className="bg-white text-black text-2xl font-black uppercase py-4 px-12 rounded-lg hover:scale-105 transition-transform active:scale-95"
+                  onClick={() => revealNextPoint(roomCode, revealedIndex + 1)}
+                  className="bg-white text-black text-2xl font-black uppercase py-4 px-12 rounded-lg hover:scale-105 transition-transform active:scale-95 shadow-[0_0_30px_rgba(255,255,255,0.3)]"
                 >
-                  Reveal 12 Points
+                  Reveal {nextPointToReveal} Points
                 </button>
               </div>
             </div>

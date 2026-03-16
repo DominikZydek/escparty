@@ -111,8 +111,14 @@ export async function setNextVoter(roomCode: string, voterId: string | null) {
   });
 }
 
-export async function revealTwelve(roomCode: string) {
-  await pusherServer.trigger(`room-${roomCode}`, "twelve-revealed", {});
+export async function revealNextPoint(roomCode: string, newIndex: number) {
+  await pusherServer.trigger(`room-${roomCode}`, "point-revealed", {
+    newIndex,
+  });
+}
+
+export async function revealAllPoints(roomCode: string) {
+  await pusherServer.trigger(`room-${roomCode}`, "all-points-revealed", {});
 }
 
 export async function startShow(roomCode: string) {
