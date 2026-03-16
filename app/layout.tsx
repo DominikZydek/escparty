@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Montserrat } from "next/font/google";
 import "./globals.css";
 import AudioToggle from "@/components/AudioToggle";
+import WakeLock from "@/components/WakeLock";
 
 const montserrat = Montserrat({
   subsets: ["latin"],
@@ -24,6 +25,7 @@ export default function RootLayout({
       <body
         className={`${montserrat.variable} antialiased`}
       >
+        <WakeLock />
         <AudioToggle />
         {children}
       </body>
