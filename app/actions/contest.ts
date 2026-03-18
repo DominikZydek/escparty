@@ -12,14 +12,13 @@ export async function getContests() {
   return contests;
 }
 
-// Zaktualizowany typ - teraz przyjmuje też gotową tablicę imageUrls
 type EntryInput = {
   id: string;
   country: string;
   artist: string;
   songTitle: string;
   videoUrl?: string;
-  imageUrls?: string[]; // <--- DODANE
+  imageUrls?: string[];
 };
 
 const formatYoutubeUrl = (url: string | undefined) => {
@@ -33,38 +32,16 @@ const formatYoutubeUrl = (url: string | undefined) => {
   return url;
 };
 
-export async function createCustomContest(
-  contestName: string,
-  entries: EntryInput[],
-) {
-  if (!contestName || entries.length === 0) {
-    throw new Error("Missing contest name or entries");
+export async function createCustomContest(contestName: string) {
+  if (!contestName.trim()) {
+    throw new Error("Missing contest name");
   }
-
-  // Po prostu formatujemy dane pod Prismę (zero fetchowania po API!)
-  const formattedEntries = entries.map((entry, index) => {
-    return {
-      id: entry.id,
-      country: getEnglishName(entry.country),
-      artist: entry.artist,
-      songTitle: entry.songTitle,
-      videoUrl: formatYoutubeUrl(entry.videoUrl) || null,
-      order: index + 1,
-      // Używamy tego co przyszło z frontendu (z wtyczki), a jak nie ma, dajemy fallback:
-      imageUrls: entry.imageUrls && entry.imageUrls.length > 0 
-        ? entry.imageUrls 
-        : Array(15).fill("/fallback-postcard.png"),
-    };
-  });
 
   const newContest = await prisma.contest.create({
     data: {
-      name: contestName,
+      name: contestName.trim(),
       year: new Date().getFullYear(),
       isOfficial: false,
-      entries: {
-        create: formattedEntries,
-      },
     },
   });
 

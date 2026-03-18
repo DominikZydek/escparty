@@ -9,73 +9,77 @@ datasource db {
 // dynamic models
 
 model GameRoom {
-  id String @id @default(uuid())
-  code String @unique
-  status GameStatus @default(LOBBY)
+  id             String     @id @default(uuid())
+  code           String     @unique
+  hostPin        String
+  status         GameStatus @default(SUBMISSIONS_OPEN)
   currentVoterId String?
-  contestId String
-  contest Contest @relation(fields: [contestId], references: [id])
-  players Player[]
+  contestId      String
+  contest        Contest    @relation(fields: [contestId], references: [id])
+  players        Player[]
   currentEntryId String?
-  currentEntry Entry? @relation(fields: [currentEntryId], references: [id])
-  createdAt DateTime @default(now())
+  currentEntry   Entry?     @relation(fields: [currentEntryId], references: [id])
+  createdAt      DateTime   @default(now())
 }
 
 model Player {
-  id String @id @default(uuid())
-  name String
-  isReady Boolean @default(false)
+  id       String   @id @default(uuid())
+  name     String
+  isReady  Boolean  @default(false)
   roomCode String
-  room GameRoom @relation(fields: [roomCode], references: [code], onDelete: Cascade)
+  room     GameRoom @relation(fields: [roomCode], references: [code], onDelete: Cascade)
   avatarId String
-  avatar Avatar? @relation(fields: [avatarId], references: [id])
-  votes Vote[]
+  avatar   Avatar?  @relation(fields: [avatarId], references: [id])
+  votes    Vote[]
 }
 
 model Vote {
-  id String @id @default(uuid())
-  points Int
+  id       String @id @default(uuid())
+  points   Int
   playerId String
-  player Player @relation(fields: [playerId], references: [id], onDelete: Cascade)
-  entryId String
-  entry Entry @relation(fields: [entryId], references: [id])
+  player   Player @relation(fields: [playerId], references: [id], onDelete: Cascade)
+  entryId  String
+  entry    Entry  @relation(fields: [entryId], references: [id])
 
   @@unique([playerId, entryId]) // one player can vote for one country only once
+  @@unique([playerId, points])
 }
 
 // static models
 
 model Contest {
-  id String @id @default(uuid())
-  name String
-  year Int
-  isOfficial Boolean @default(true)
-  entries Entry[]
-  rooms GameRoom[]
+  id         String     @id @default(uuid())
+  name       String
+  year       Int
+  isOfficial Boolean    @default(true)
+  entries    Entry[]
+  rooms      GameRoom[]
 }
 
 model Entry {
-  id String @id @default(uuid())
-  country String
-  artist String
-  songTitle String
-  videoUrl String?
-  imageUrls String[] @default([])
-  order Int @default(0)
-  contestId String
-  contest Contest @relation(fields: [contestId], references: [id])
-  votes Vote[]
-  activeRooms GameRoom[]
+  id            String     @id @default(uuid())
+  country       String
+  artist        String
+  songTitle     String
+  videoUrl      String?
+  imageUrls     String[]   @default([])
+  imagesFetched Boolean    @default(false)
+  order         Int        @default(0)
+  contestId     String
+  contest       Contest    @relation(fields: [contestId], references: [id])
+  votes         Vote[]
+  activeRooms   GameRoom[]
 }
 
 model Avatar {
-  id String @id @default(uuid())
-  name String
-  url String
+  id      String   @id @default(uuid())
+  name    String
+  url     String
   players Player[]
 }
 
 enum GameStatus {
+  SUBMISSIONS_OPEN
   LOBBY
   RUNNING_ORDER
   WATCHING

@@ -12,6 +12,8 @@ import PlayerWatchingScreen from "@/components/PlayerWatchingScreen";
 import HostWatchingScreen from "@/components/HostWatchingScreen";
 import HostRunningOrderScreen from "@/components/HostRunningOrderScreen";
 import PlayerDrawWaitingScreen from "@/components/PlayerDrawWaitingScreen";
+import HostSubmissionsDashboard from "@/components/HostSubmissionsDashboard";
+import Button from "@/components/Button";
 
 interface PageProps {
   params: Promise<{ roomCode: string }>;
@@ -28,7 +30,7 @@ export default async function RoomPage({ params }: PageProps) {
     where: { code: roomCode },
     include: {
       players: { include: { avatar: true } },
-      contest: true
+      contest: true,
     },
   });
 
@@ -37,6 +39,36 @@ export default async function RoomPage({ params }: PageProps) {
   }
 
   switch (room.status) {
+    case "SUBMISSIONS_OPEN":
+      if (isHost) {
+        return (
+          <HostSubmissionsDashboard
+            roomCode={roomCode}
+            hostPin={room.hostPin}
+            contestName={room.contest.name}
+          />
+        );
+      }
+
+      return (
+        <div className="min-h-screen flex flex-col items-center justify-center p-6 text-center text-white bg-black/50">
+          <div className="max-w-md bg-black/80 border border-white/20 p-8 rounded-2xl backdrop-blur-md shadow-2xl animate-in zoom-in duration-300">
+            <h1 className="text-3xl font-black mb-4 drop-shadow-lg text-pink-500">
+              Hold your horses!
+            </h1>
+            <p className="text-white/70 mb-8 leading-relaxed">
+              The lobby for <strong>{room.contest.name}</strong> is not open
+              yet. The host is currently collecting entries.
+            </p>
+            <div className="flex flex-col gap-4">
+              <Button href={`/submit/${roomCode}`}>Submit an Entry</Button>
+              <Button href="/" variant="secondary">
+                Go back home
+              </Button>
+            </div>
+          </div>
+        </div>
+      );
     case "LOBBY":
       if (isHost) {
         return (

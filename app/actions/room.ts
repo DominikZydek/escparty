@@ -13,6 +13,10 @@ const generateRoomCode = () => {
   return result;
 };
 
+const generateHostPin = () => {
+  return Math.floor(100000 + Math.random() * 900000).toString();
+};
+
 export async function createRoom(contestId: string) {
   let roomCode = "";
   let isUnique = false;
@@ -25,11 +29,14 @@ export async function createRoom(contestId: string) {
     if (!existing) isUnique = true;
   }
 
+  const hostPin = generateHostPin();
+
   const room = await prisma.gameRoom.create({
     data: {
       code: roomCode,
+      hostPin: hostPin,
       contestId: contestId,
-      status: "LOBBY",
+      status: "SUBMISSIONS_OPEN",
     },
   });
 
@@ -40,10 +47,31 @@ export async function createRoom(contestId: string) {
     secure: process.env.NODE_ENV === "production",
     sameSite: "lax",
     path: "/",
-    maxAge: 60 * 60 * 24,
+    maxAge: 60 * 60 * 24 * 30,
   });
 
   return room;
+}
+
+export async function loginHost(roomCode: string, pin: string) {
+  const room = await prisma.gameRoom.findUnique({
+    where: { code: roomCode.toUpperCase() },
+  });
+
+  if (!room || room.hostPin !== pin) {
+    return { error: "Invalid room code or PIN." };
+  }
+
+  const cookieStore = await cookies();
+  cookieStore.set("host_access", room.code, {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === "production",
+    sameSite: "lax",
+    path: "/",
+    maxAge: 60 * 60 * 24 * 30,
+  });
+
+  return { success: true, roomCode: room.code };
 }
 
 export async function validateRoom(code: string) {
@@ -196,4 +224,15 @@ export async function saveRunningOrderAndStart(
   });
 
   return { success: true };
+}
+
+export async function openLobby(roomCode: string) {
+  await prisma.gameRoom.update({
+    where: { code: roomCode },
+    data: { status: "LOBBY" },
+  });
+
+  await pusherServer.trigger(`room-${roomCode}`, "room-updated", {
+    status: "LOBBY",
+  });
 }

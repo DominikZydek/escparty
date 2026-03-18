@@ -8,23 +8,35 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
         if (!res.ok) throw new Error(`HTTP Error: ${res.status}`);
         return res.text();
       })
-      .then(html => {
-        const images = [];
+      .then(async (html) => {
         const listMatch = html.match(/class="image-list"[^>]*>([\s\S]*?)<\/ul>/);
-
-        if (listMatch && listMatch[1]) {
-          const imgRegex = /<img[^>]+src="([^">]+)"/g;
-          let match;
-          
-          while ((match = imgRegex.exec(listMatch[1])) !== null) {
-            if (images.length >= 15) break;
-            let src = match[1];
-            let highResUrl = src.replace(/\/i\/u\/[a-zA-Z0-9]+\//, "/i/u/ar0/");
-            images.push(highResUrl);
-          }
-        }
         
-        sendResponse({ success: true, images: images });
+        if (!listMatch || !listMatch[1]) {
+          return sendResponse({ success: true, images: [] });
+        }
+
+        const imgRegex = /<img[^>]+src="([^">]+)"/g;
+        let match;
+        const checkPromises = [];
+
+        while ((match = imgRegex.exec(listMatch[1])) !== null) {
+          if (checkPromises.length >= 15) break;
+          
+          let originalSrc = match[1];
+          let highResUrl = originalSrc.replace(/\/i\/u\/[a-zA-Z0-9]+\//, "/i/u/ar0/");
+
+          const checkImage = fetch(highResUrl, { method: 'HEAD' })
+            .then(res => {
+              return res.ok ? highResUrl : originalSrc;
+            })
+            .catch(() => originalSrc);
+
+          checkPromises.push(checkImage);
+        }
+
+        const validImages = await Promise.all(checkPromises);
+        
+        sendResponse({ success: true, images: validImages });
       })
       .catch(error => {
         console.error("Last.fm fetch error:", error);
