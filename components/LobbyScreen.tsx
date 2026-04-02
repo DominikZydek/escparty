@@ -102,9 +102,10 @@ export default function LobbyScreen({
         {players.map((player) => (
           <div
             key={player.id}
-            className="flex flex-col items-center animate-in zoom-in duration-300 gap-3"
+            // Dodajemy 'group' tutaj, żeby hover działał na całość (i zdjęcie i tekst) spójnie
+            className="flex flex-col items-center animate-in zoom-in duration-300 gap-3 group"
           >
-            <div className="relative group">
+            <div className="relative">
               <img
                 src={player.avatar?.url || "/placeholder.png"}
                 alt={player.name}
@@ -112,7 +113,8 @@ export default function LobbyScreen({
               />
               <div className="absolute -bottom-2 -right-2 bg-green-500 w-7 h-7 rounded-full border-4 border-gray-900 shadow-md" />
             </div>
-            <span className="font-bold text-lg text-center truncate w-full group-hover:text-pink-400 transition-colors">
+
+            <span className="font-bold text-lg text-center wrap-break-word leading-tight px-2 w-full group-hover:text-pink-400 transition-colors">
               {player.name}
             </span>
           </div>
