@@ -182,7 +182,10 @@ export default function HostSubmissionsDashboard({
 
   const handleSyncImages = async () => {
     setIsSyncing(true);
-    const pendingEntries = entries.filter((e) => !e.imagesFetched);
+    const pendingEntries = entries.filter(
+      (e) =>
+        !e.imagesFetched || e.imageUrls?.includes("/fallback-postcard.png"),
+    );
 
     for (const entry of pendingEntries) {
       console.log(`Fetching imgs for: ${entry.artist}...`);
@@ -204,7 +207,9 @@ export default function HostSubmissionsDashboard({
     setIsSyncing(false);
   };
 
-  const pendingCount = entries.filter((e) => !e.imagesFetched).length;
+  const syncCount = entries.filter(
+    (e) => !e.imagesFetched || e.imageUrls?.includes("/fallback-postcard.png"),
+  ).length;
 
   return (
     <div className="min-h-screen w-full flex flex-col p-6 text-white overflow-hidden bg-black/50">
@@ -281,9 +286,9 @@ export default function HostSubmissionsDashboard({
 
             <button
               onClick={handleSyncImages}
-              disabled={isSyncing || pendingCount === 0}
+              disabled={isSyncing || syncCount === 0}
               className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-bold uppercase tracking-wider transition-all ${
-                pendingCount > 0
+                syncCount > 0
                   ? "bg-pink-600 hover:bg-pink-500 text-white shadow-[0_0_15px_rgba(235,2,115,0.4)]"
                   : "bg-white/5 text-white/30 cursor-not-allowed"
               }`}
@@ -292,7 +297,11 @@ export default function HostSubmissionsDashboard({
                 size={16}
                 className={isSyncing ? "animate-spin" : ""}
               />
-              {isSyncing ? "Syncing..." : `Sync Images (${pendingCount})`}
+              {isSyncing
+                ? "Syncing..."
+                : syncCount > 0
+                  ? `Sync Missing (${syncCount})`
+                  : "All Synced"}
             </button>
           </div>
 
@@ -385,16 +394,11 @@ export default function HostSubmissionsDashboard({
           <div className="mt-auto pt-4 border-t border-white/10 relative z-10 shrink-0">
             <Button
               onClick={handleOpenLobby}
-              disabled={isSyncing || pendingCount > 0}
+              disabled={isSyncing}
               className="w-full"
             >
               Close Submissions & Open Lobby
             </Button>
-            {pendingCount > 0 && (
-              <p className="text-center text-xs text-pink-400 mt-3 font-bold">
-                You must sync all images before opening the lobby!
-              </p>
-            )}
           </div>
         </div>
       </div>

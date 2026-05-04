@@ -4,9 +4,11 @@ import { useState, useEffect } from "react";
 import Pusher from "pusher-js";
 import Button from "@/components/Button";
 import { Player, Avatar } from "@prisma/client";
-import { startRunningOrderDraw } from "@/app/actions/room"; // <-- ZMIENIONY IMPORT
+import { startRunningOrderDraw } from "@/app/actions/room";
+import { removePlayer } from "@/app/actions/player";
 import { useRouter } from "next/navigation";
 import QRCode from "react-qr-code";
+import { X } from "lucide-react";
 
 type PlayerWithAvatar = Player & { avatar: Avatar | null };
 
@@ -35,12 +37,14 @@ export default function LobbyScreen({
     const channel = pusher.subscribe(`room-${roomCode}`);
 
     channel.bind("player-joined", (newPlayer: PlayerWithAvatar) => {
-      console.log("New player arrived:", newPlayer);
-
       setPlayers((prev) => {
         if (prev.find((p) => p.id === newPlayer.id)) return prev;
         return [...prev, newPlayer];
       });
+    });
+
+    channel.bind("player-left", (data: { playerId: string }) => {
+      setPlayers((prev) => prev.filter((p) => p.id !== data.playerId));
     });
 
     channel.bind("room-updated", (data: { status: string }) => {
@@ -56,14 +60,18 @@ export default function LobbyScreen({
 
   const handleStartGame = async () => {
     if (isStarting) return;
-
     setIsStarting(true);
-
     try {
       await startRunningOrderDraw(roomCode);
     } catch (error) {
       console.error("Failed to start", error);
       setIsStarting(false);
+    }
+  };
+
+  const handleKickPlayer = async (playerId: string) => {
+    if (confirm("Are you sure you want to kick this player?")) {
+      await removePlayer(playerId, roomCode);
     }
   };
 
@@ -102,8 +110,7 @@ export default function LobbyScreen({
         {players.map((player) => (
           <div
             key={player.id}
-            // Dodajemy 'group' tutaj, żeby hover działał na całość (i zdjęcie i tekst) spójnie
-            className="flex flex-col items-center animate-in zoom-in duration-300 gap-3 group"
+            className="flex flex-col items-center animate-in zoom-in duration-300 gap-3 group relative"
           >
             <div className="relative">
               <img
@@ -112,6 +119,14 @@ export default function LobbyScreen({
                 className="w-28 h-28 rounded-full border-4 border-white/20 group-hover:border-white group-hover:scale-105 transition-all shadow-xl object-cover"
               />
               <div className="absolute -bottom-2 -right-2 bg-green-500 w-7 h-7 rounded-full border-4 border-gray-900 shadow-md" />
+
+              <button
+                onClick={() => handleKickPlayer(player.id)}
+                className="absolute -top-1 -right-1 bg-red-500 hover:bg-red-600 rounded-full p-1.5 border-2 border-gray-900 opacity-0 group-hover:opacity-100 transition-all z-10 hover:scale-110"
+                title="Kick Player"
+              >
+                <X size={14} className="text-white" />
+              </button>
             </div>
 
             <span className="font-bold text-lg text-center wrap-break-word leading-tight px-2 w-full group-hover:text-pink-400 transition-colors">
